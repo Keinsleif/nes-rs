@@ -25,6 +25,11 @@ impl CPU {
         self.update_zero_n_negative_flag(self.reg_x)
     }
 
+    fn inx(&mut self) {
+        self.reg_x += 1;
+        self.update_zero_n_negative_flag(self.reg_x)
+    }
+
     fn update_zero_n_negative_flag(&mut self,result: u8) {
         if result == 0 {
             self.status = self.status | 0b0000_0010;
@@ -54,6 +59,9 @@ impl CPU {
                 }
                 0xAA => {
                     self.tax();
+                }
+                0xE8 => {
+                    self.inx();
                 }
                 0x00 => {
                     return;
