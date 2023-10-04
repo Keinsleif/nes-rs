@@ -26,7 +26,11 @@ impl CPU {
     }
 
     fn inx(&mut self) {
-        self.reg_x += 1;
+        if self.reg_x == 0xff {
+            self.reg_x = 0;
+        } else {
+            self.reg_x += 1;
+        }
         self.update_zero_n_negative_flag(self.reg_x)
     }
 
@@ -99,5 +103,22 @@ mod tests {
         cpu.reg_a = 0x10;
         cpu.interpret(vec![0xaa,0x00]);
         assert_eq!(cpu.reg_x, 0x10)
+    }
+
+    #[test]
+   fn test_5_ops_working_together() {
+       let mut cpu = CPU::new();
+       cpu.interpret(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
+ 
+       assert_eq!(cpu.reg_x, 0xc1)
+   }
+
+    #[test]
+    fn test_inx_overflow() {
+        let mut cpu = CPU::new();
+        cpu.reg_x = 0xff;
+        cpu.interpret(vec![0xe8, 0xe8, 0x00]);
+
+        assert_eq!(cpu.reg_x, 1)
     }
 }
