@@ -1,5 +1,6 @@
 pub struct CPU {
     pub reg_a: u8,
+    pub reg_x: u8,
     pub status: u8,
     pub pc: u8,
 }
@@ -8,6 +9,7 @@ impl CPU {
     pub fn new() -> Self {
         CPU {
             reg_a: 0,
+            reg_x: 0,
             status: 0,
             pc: 0,
         }
@@ -16,6 +18,11 @@ impl CPU {
     fn lda(&mut self,value: u8) {
         self.reg_a = value;
         self.update_zero_n_negative_flag(self.reg_a)
+    }
+
+    fn tax(&mut self) {
+        self.reg_x = self.reg_a;
+        self.update_zero_n_negative_flag(self.reg_x)
     }
 
     fn update_zero_n_negative_flag(&mut self,result: u8) {
@@ -43,7 +50,10 @@ impl CPU {
                 0xA9 => {
                     let param = program[self.pc as usize];
                     self.pc += 1;
-                    self.lda(param)
+                    self.lda(param);
+                }
+                0xAA => {
+                    self.tax();
                 }
                 0x00 => {
                     return;
@@ -53,6 +63,7 @@ impl CPU {
         }
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -72,5 +83,13 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.interpret(vec![0xa9,0x00,0x00]);
         assert!(cpu.status & 0b0000_0010 == 0b10)
+    }
+
+    #[test]
+    fn test_0xaa_tax() {
+        let mut cpu = CPU::new();
+        cpu.reg_a = 0x10;
+        cpu.interpret(vec![0xaa,0x00]);
+        assert_eq!(cpu.reg_x, 0x10)
     }
 }
