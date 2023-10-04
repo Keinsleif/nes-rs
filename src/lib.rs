@@ -2,7 +2,8 @@ pub struct CPU {
     pub reg_a: u8,
     pub reg_x: u8,
     pub status: u8,
-    pub pc: u8,
+    pub pc: u16,
+    memory: [u8; 0xFFFF]
 }
 
 impl CPU {
@@ -12,6 +13,58 @@ impl CPU {
             reg_x: 0,
             status: 0,
             pc: 0,
+            memory: [0; 0xFFFF],
+        }
+    }
+
+    fn mem_read(&mut self, addr: u16) -> u8 {
+        self.memory[addr as usize]
+    }
+
+    fn mem_write(&mut self, addr: u16, data: u8) {
+        self.memory[addr as usize] = data;
+    }
+
+    fn mem_read_u16(&mut self, pos: u16) -> u16 {
+        let low = self.mem_read(pos) as u16;
+        let high = self.mem_read(pos+1) as u16;
+        (high << 8) | low
+    }
+
+    fn mem_write_u16(&mut self, pos: u16, data: u16) {
+        let high = (data >> 8) as u8;
+        let low = (data & 0xFF) as u8;
+        self.mem_write(pos, low);
+        self.mem_write(pos+1, high)
+    }
+
+    pub fn load_and_run(&mut self,program: Vec<u8>) {
+        self.load(program);
+        self.reset();
+        self.run();
+    }
+
+    pub fn reset(&mut self) {
+        self.reg_a = 0;
+        self.reg_x = 0;
+        self.status = 0;
+
+        self.pc = self.mem_read_u16(0xFFFC)
+    }
+
+    pub fn load(&mut self, program: Vec<u8>) {
+        self.memory[0x8000..(0x8000 + program.len())].copy_from_slice(&program[..]);
+        self.mem_write_u16(0xFFFC, 0x8000);
+    }
+
+    pub fn run(&mut self) {
+        loop {
+            let opcode = self.mem_read(self.pc);
+            self.pc += 1;
+
+            match opcode {
+                _ => todo!("")
+            }
         }
     }
 
