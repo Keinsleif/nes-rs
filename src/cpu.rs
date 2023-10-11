@@ -87,6 +87,12 @@ impl CPU {
                 "LDA" => {
                     self.lda(&opcode.mode);
                 }
+                "LDX" => {
+                    self.ldx(&opcode.mode);
+                }
+                "LDY" => {
+                    self.ldy(&opcode.mode);
+                }
                 "TAX" => {
                     self.tax();
                 }
@@ -107,6 +113,20 @@ impl CPU {
 
         self.reg_a = self.mem_read(addr);
         self.update_zero_n_negative_flag(self.reg_a)
+    }
+
+    fn ldx(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+
+        self.reg_x = self.mem_read(addr);
+        self.update_zero_n_negative_flag(self.reg_x)
+    }
+
+    fn ldy(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+
+        self.reg_y = self.mem_read(addr);
+        self.update_zero_n_negative_flag(self.reg_y)
     }
 
     fn tax(&mut self) {
@@ -184,6 +204,24 @@ mod tests {
         let mut cpu = CPU::new();
         cpu.load_and_run(vec![0xa9, 0x05, 0x00]);
         assert_eq!(cpu.reg_a, 0x05);
+        assert!(cpu.status & 0b0000_0010 == 0);
+        assert!(cpu.status & 0b1000_0000 == 0);
+    }
+
+    #[test]
+    fn test_0xa2_ldx_immediate() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa2, 0x05, 0x00]);
+        assert_eq!(cpu.reg_x, 0x05);
+        assert!(cpu.status & 0b0000_0010 == 0);
+        assert!(cpu.status & 0b1000_0000 == 0);
+    }
+
+    #[test]
+    fn test_0xa0_ldy_immediate() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa0, 0x05, 0x00]);
+        assert_eq!(cpu.reg_y, 0x05);
         assert!(cpu.status & 0b0000_0010 == 0);
         assert!(cpu.status & 0b1000_0000 == 0);
     }
