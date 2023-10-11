@@ -199,10 +199,15 @@ impl CPU {
 mod tests {
     use super::*;
 
+    fn run_ops(program: Vec<u8>) -> CPU {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(program);
+        cpu
+    }
+
     #[test]
     fn test_0xa9_lda_immediate() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0x05, 0x00]);
+        let cpu = run_ops(vec![0xa9, 0x05, 0x00]);
         assert_eq!(cpu.reg_a, 0x05);
         assert!(cpu.status & 0b0000_0010 == 0);
         assert!(cpu.status & 0b1000_0000 == 0);
@@ -210,8 +215,7 @@ mod tests {
 
     #[test]
     fn test_0xa2_ldx_immediate() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa2, 0x05, 0x00]);
+        let cpu = run_ops(vec![0xa2, 0x05, 0x00]);
         assert_eq!(cpu.reg_x, 0x05);
         assert!(cpu.status & 0b0000_0010 == 0);
         assert!(cpu.status & 0b1000_0000 == 0);
@@ -219,8 +223,7 @@ mod tests {
 
     #[test]
     fn test_0xa0_ldy_immediate() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa0, 0x05, 0x00]);
+        let cpu = run_ops(vec![0xa0, 0x05, 0x00]);
         assert_eq!(cpu.reg_y, 0x05);
         assert!(cpu.status & 0b0000_0010 == 0);
         assert!(cpu.status & 0b1000_0000 == 0);
@@ -228,30 +231,26 @@ mod tests {
 
     #[test]
     fn test_0xa9_lda_zero_flag() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0x00, 0x00]);
+        let cpu = run_ops(vec![0xa9, 0x00, 0x00]);
         assert!(cpu.status & 0b0000_0010 == 0b10)
     }
 
     #[test]
     fn test_0xaa_tax() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0x10, 0xaa, 0x00]);
+        let cpu = run_ops(vec![0xa9, 0x10, 0xaa, 0x00]);
         assert_eq!(cpu.reg_x, 0x10)
     }
 
     #[test]
     fn test_5_ops_working_together() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
+        let cpu = run_ops(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
 
         assert_eq!(cpu.reg_x, 0xc1)
     }
 
     #[test]
     fn test_inx_overflow() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa2, 0xff, 0xe8, 0xe8, 0x00]);
+        let cpu = run_ops(vec![0xa2, 0xff, 0xe8, 0xe8, 0x00]);
 
         assert_eq!(cpu.reg_x, 1)
     }
