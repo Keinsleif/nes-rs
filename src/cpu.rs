@@ -118,7 +118,7 @@ impl CPU {
         }
     }
 
-    fn get_operand_adress(&self, mode: &AddressingMode) -> u16 {
+    fn get_operand_address(&self, mode: &AddressingMode) -> u16 {
         match mode {
             AddressingMode::Immediate => self.program_counter,
             AddressingMode::ZeroPage => self.mem_read(self.program_counter) as u16,
@@ -154,7 +154,7 @@ impl CPU {
                 deref_base.wrapping_add(self.reg_y as u16)
             }
             AddressingMode::NoneAddressing => {
-                panic!("Adressing Mode {:?} is not supported", mode);
+                panic!("Addressing Mode {:?} is not supported", mode);
             }
         }
     }
