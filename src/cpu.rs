@@ -158,33 +158,6 @@ impl CPU {
             }
         }
     }
-
-    pub fn interpret(&mut self, program: Vec<u8>) {
-        self.program_counter = 0;
-
-        loop {
-            let opcode = program[self.program_counter as usize];
-            self.program_counter += 1;
-
-            match opcode {
-                0xA9 => {
-                    let param = program[self.program_counter as usize];
-                    self.program_counter += 1;
-                    self.lda(param);
-                }
-                0xAA => {
-                    self.tax();
-                }
-                0xE8 => {
-                    self.inx();
-                }
-                0x00 => {
-                    return;
-                }
-                _ => todo!(""),
-            }
-        }
-    }
 }
 
 #[cfg(test)]
@@ -194,7 +167,7 @@ mod tests {
     #[test]
     fn test_0xa9_lda_immediate() {
         let mut cpu = CPU::new();
-        cpu.interpret(vec![0xa9, 0x05, 0x00]);
+        cpu.load_and_run(vec![0xa9, 0x05, 0x00]);
         assert_eq!(cpu.reg_a, 0x05);
         assert!(cpu.status & 0b0000_0010 == 0);
         assert!(cpu.status & 0b1000_0000 == 0);
@@ -203,22 +176,21 @@ mod tests {
     #[test]
     fn test_0xa9_lda_zero_flag() {
         let mut cpu = CPU::new();
-        cpu.interpret(vec![0xa9, 0x00, 0x00]);
+        cpu.load_and_run(vec![0xa9, 0x00, 0x00]);
         assert!(cpu.status & 0b0000_0010 == 0b10)
     }
 
     #[test]
     fn test_0xaa_tax() {
         let mut cpu = CPU::new();
-        cpu.reg_a = 0x10;
-        cpu.interpret(vec![0xaa, 0x00]);
+        cpu.load_and_run(vec![0xa9, 0x10, 0xaa, 0x00]);
         assert_eq!(cpu.reg_x, 0x10)
     }
 
     #[test]
     fn test_5_ops_working_together() {
         let mut cpu = CPU::new();
-        cpu.interpret(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
+        cpu.load_and_run(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
 
         assert_eq!(cpu.reg_x, 0xc1)
     }
@@ -226,8 +198,7 @@ mod tests {
     #[test]
     fn test_inx_overflow() {
         let mut cpu = CPU::new();
-        cpu.reg_x = 0xff;
-        cpu.interpret(vec![0xe8, 0xe8, 0x00]);
+        cpu.load_and_run(vec![0xa2, 0xff, 0xe8, 0xe8, 0x00]);
 
         assert_eq!(cpu.reg_x, 1)
     }
