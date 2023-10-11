@@ -1,11 +1,15 @@
+use std::collections::HashMap;
+
+use once_cell::sync::Lazy;
+
 use crate::cpu::AddressingMode;
 
 pub struct OpCode {
-    code: u8,
-    name: &'static str,
-    len: u8,
-    cycles: u8,
-    mode: AddressingMode,
+    pub code: u8,
+    pub name: &'static str,
+    pub len: u8,
+    pub cycles: u8,
+    pub mode: AddressingMode,
 }
 
 impl OpCode {
@@ -20,7 +24,7 @@ impl OpCode {
     }
 }
 
-pub static CPU_OPS_CODES: Vec<OpCode> = vec![
+pub static CPU_OPS_CODES: Lazy<Vec<OpCode>> = Lazy::new(|| {vec![
     OpCode::new(0x69, "ADC", 2, 2, AddressingMode::Immediate),
     OpCode::new(0x65, "ADC", 2, 3, AddressingMode::ZeroPage),
     OpCode::new(0x75, "ADC", 2, 4, AddressingMode::ZeroPage_X),
@@ -54,7 +58,7 @@ pub static CPU_OPS_CODES: Vec<OpCode> = vec![
     OpCode::new(0x24, "BIT", 2, 3, AddressingMode::ZeroPage),
     OpCode::new(0x2C, "BIT", 3, 4, AddressingMode::Absolute),
 
-    OpCode::new(0x30, "BMI", 2, 2, Addressing::NoneAddressing),
+    OpCode::new(0x30, "BMI", 2, 2, AddressingMode::NoneAddressing),
 
     OpCode::new(0xD0, "BNE", 2, 2, AddressingMode::NoneAddressing),
 
@@ -227,4 +231,12 @@ pub static CPU_OPS_CODES: Vec<OpCode> = vec![
     OpCode::new(0x9A, "TXS", 1, 2, AddressingMode::NoneAddressing),
 
     OpCode::new(0x98, "TYA", 1, 2, AddressingMode::NoneAddressing),
-];
+]});
+
+pub static OPCODE_MAP: Lazy<HashMap<u8, &'static OpCode>> = Lazy::new(|| {
+    let mut map: HashMap<u8, &OpCode> = HashMap::new();
+    for op in CPU_OPS_CODES.iter() {
+        map.insert(op.code, op);
+    }
+    map
+});
