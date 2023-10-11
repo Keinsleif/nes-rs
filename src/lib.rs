@@ -1,3 +1,18 @@
+#[derive(Debug)]
+#[allow(non_camel_case_types)]
+pub enum AddressingMode {
+   Immediate,
+   ZeroPage,
+   ZeroPage_X,
+   ZeroPage_Y,
+   Absolute,
+   Absolute_X,
+   Absolute_Y,
+   Indirect_X,
+   Indirect_Y,
+   NoneAddressing,
+}
+
 pub struct CPU {
     pub reg_a: u8,
     pub reg_x: u8,
@@ -100,6 +115,47 @@ impl CPU {
             self.status = self.status | 0b1000_0000;
         } else {
             self.status = self.status & 0b0111_1111;
+        }
+    }
+
+    fn get_operand_adress(&self, mode: &AddressingMode) -> u16 {
+        match mode {
+            AddressingMode::Immediate => self.program_counter,
+            AddressingMode::ZeroPage => self.mem_read(self.program_counter) as u16,
+            AddressingMode::ZeroPage_X => {
+                let pos = self.mem_read(self.program_counter);
+                pos.wrapping_add(self.reg_x) as u16
+            }
+            AddressingMode::ZeroPage_Y => {
+                let pos = self.mem_read(self.program_counter);
+                pos.wrapping_add(self.reg_y) as u16
+            },
+            AddressingMode::Absolute => self.mem_read_u16(self.program_counter),
+            AddressingMode::Absolute_X => {
+                let pos = self.mem_read_u16(self.program_counter);
+                pos.wrapping_add(self.reg_x as u16)
+            }
+            AddressingMode::Absolute_Y => {
+                let pos = self.mem_read_u16(self.program_counter);
+                pos.wrapping_add(self.reg_y as u16)
+            }
+            AddressingMode::Indirect_X => {
+                let base = self.mem_read(self.program_counter);
+                let ptr = base.wrapping_add(self.reg_x);
+                let low = self.mem_read(ptr as u16);
+                let high = self.mem_read(ptr.wrapping_add(1) as u16);
+                (high as u16) << 8 | (low as u16)
+            }
+            AddressingMode::Indirect_Y => {
+                let base = self.mem_read(self.program_counter);
+                let low = self.mem_read(base as u16);
+                let high = self.mem_read(base.wrapping_add(1) as u16);
+                let deref_base = (high as u16) << 8 | (low as u16);
+                deref_base.wrapping_add(self.reg_y as u16)
+            }
+            AddressingMode::NoneAddressing => {
+                panic!("Adressing Mode {:?} is not supported", mode);
+            }
         }
     }
 
