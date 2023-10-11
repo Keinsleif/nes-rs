@@ -78,17 +78,34 @@ impl CPU {
 
     pub fn run(&mut self) {
         loop {
-            let opcode = self.mem_read(self.program_counter);
+            let code = self.mem_read(self.program_counter);
             self.program_counter += 1;
 
-            match opcode {
+            let opcode = OPCODE_MAP.get(&code).unwrap();
+
+            match opcode.name {
+                "LDA" => {
+                    self.lda(&opcode.mode);
+                }
+                "TAX" => {
+                    self.tax();
+                }
+                "INX" => {
+                    self.inx()
+                }
+                "BRK" => {
+                    return;
+                }
                 _ => todo!(""),
             }
+            self.program_counter += (opcode.len - 1) as u16;
         }
     }
 
-    fn lda(&mut self, value: u8) {
-        self.reg_a = value;
+    fn lda(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+
+        self.reg_a = self.mem_read(addr);
         self.update_zero_n_negative_flag(self.reg_a)
     }
 
