@@ -174,4 +174,34 @@ mod tests {
 
         assert_eq!(cpu.reg_x, 1)
     }
+
+    #[test]
+    fn test_mem_read() {
+        let mut cpu = CPU::new();
+        cpu.memory[0x20 as usize] = 0x10;
+        let result = cpu.mem_read(0x20);
+        assert_eq!(result, 0x10)
+    }
+
+    #[test]
+    fn test_mem_write() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x20,0x10);
+        assert_eq!(cpu.memory[0x20 as usize],0x10)
+    }
+
+    #[test]
+    fn test_mem_read_u16() {
+        let mut cpu: CPU = CPU::new();
+        cpu.memory[0xFFFC as usize] = 0x10;
+        let result = cpu.mem_read_u16(0xFFFC);
+        assert_eq!(result,0x10)
+    }
+
+    #[test]
+    fn test_mem_write_u16() {
+        let mut cpu: CPU = CPU::new();
+        cpu.mem_write(0xFFFC, 0x10);
+        assert_eq!(cpu.memory[0xFFFC as usize], 0x10)
+    }
 }
