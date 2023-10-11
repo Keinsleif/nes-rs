@@ -3,7 +3,7 @@ pub struct CPU {
     pub reg_x: u8,
     pub reg_y: u8,
     pub status: u8,
-    pub pc: u16,
+    pub program_counter: u16,
     memory: [u8; 0xFFFF]
 }
 
@@ -14,7 +14,7 @@ impl CPU {
             reg_x: 0,
             reg_y: 0,
             status: 0,
-            pc: 0,
+            program_counter: 0,
             memory: [0; 0xFFFF],
         }
     }
@@ -51,7 +51,7 @@ impl CPU {
         self.reg_x = 0;
         self.status = 0;
 
-        self.pc = self.mem_read_u16(0xFFFC)
+        self.program_counter = self.mem_read_u16(0xFFFC)
     }
 
     pub fn load(&mut self, program: Vec<u8>) {
@@ -61,8 +61,8 @@ impl CPU {
 
     pub fn run(&mut self) {
         loop {
-            let opcode = self.mem_read(self.pc);
-            self.pc += 1;
+            let opcode = self.mem_read(self.program_counter);
+            self.program_counter += 1;
 
             match opcode {
                 _ => todo!("")
@@ -104,16 +104,16 @@ impl CPU {
     }
 
     pub fn interpret(&mut self, program: Vec<u8>) {
-        self.pc = 0;
+        self.program_counter = 0;
         
         loop {
-            let opcode = program[self.pc as usize];
-            self.pc += 1;
+            let opcode = program[self.program_counter as usize];
+            self.program_counter += 1;
 
             match opcode {
                 0xA9 => {
-                    let param = program[self.pc as usize];
-                    self.pc += 1;
+                    let param = program[self.program_counter as usize];
+                    self.program_counter += 1;
                     self.lda(param);
                 }
                 0xAA => {
