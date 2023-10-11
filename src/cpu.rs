@@ -87,6 +87,12 @@ impl CPU {
                 "CLC" => {
                     self.clc();
                 }
+                "CLD" => {
+                    self.cld();
+                }
+                "CLI" => {
+                    self.cli();
+                }
                 "LDA" => {
                     self.lda(&opcode.mode);
                 }
@@ -98,6 +104,12 @@ impl CPU {
                 }
                 "SEC" => {
                     self.sec();
+                }
+                "SED" => {
+                    self.sed();
+                }
+                "SEI" => {
+                    self.sei();
                 }
                 "TAX" => {
                     self.tax();
@@ -117,6 +129,15 @@ impl CPU {
     fn clc(&mut self) {
         self.status = self.status & 0b1111_1110
     }
+
+    fn cld(&mut self) {
+        self.status = self.status & 0b1111_0111;
+    }
+
+    fn cli(&mut self) {
+        self.status = self.status & 0b1111_1011;
+    }
+
 
     fn lda(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
@@ -141,6 +162,14 @@ impl CPU {
 
     fn sec(&mut self) {
         self.status = self.status | 0b0000_0001
+    }
+
+    fn sed(&mut self) {
+        self.status = self.status | 0b0000_1000;
+    }
+
+    fn sei(&mut self) {
+        self.status = self.status | 0b0000_0100;
     }
 
     fn tax(&mut self) {
@@ -270,11 +299,19 @@ mod tests {
     }
 
     #[test]
-    fn test_clc_n_sec() {
+    fn test_set_clear_flags() {
         let cpu = run_ops(vec![0x18, 0x38, 0x00]);
-        assert!(cpu.status & 0b0000_0001 == 1);
+        assert!(cpu.status & 0b0000_0001 != 0);
         let cpu = run_ops(vec![0x38, 0x18, 0x00]);
         assert!(cpu.status & 0b0000_0001 == 0);
+        let cpu = run_ops(vec![0xD8, 0xF8, 0x00]);
+        assert!(cpu.status & 0b000_1000 != 0);
+        let cpu = run_ops(vec![0xF8, 0xD8, 0x00]);
+        assert!(cpu.status & 0b0000_1000 == 0);
+        let cpu = run_ops(vec![0x58, 0x78, 0x00]);
+        assert!(cpu.status & 0b0000_0100 != 0);
+        let cpu = run_ops(vec![0x78, 0x58, 0x00]);
+        assert!(cpu.status & 0b0000_0100 == 0);
     }
 
     #[test]
