@@ -1,6 +1,7 @@
 pub struct CPU {
     pub reg_a: u8,
     pub reg_x: u8,
+    pub reg_y: u8,
     pub status: u8,
     pub pc: u16,
     memory: [u8; 0xFFFF]
@@ -11,6 +12,7 @@ impl CPU {
         CPU {
             reg_a: 0,
             reg_x: 0,
+            reg_y: 0,
             status: 0,
             pc: 0,
             memory: [0; 0xFFFF],
