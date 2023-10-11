@@ -84,6 +84,9 @@ impl CPU {
             let opcode = OPCODE_MAP.get(&code).unwrap();
 
             match opcode.name {
+                "CLC" => {
+                    self.clc();
+                }
                 "LDA" => {
                     self.lda(&opcode.mode);
                 }
@@ -92,6 +95,9 @@ impl CPU {
                 }
                 "LDY" => {
                     self.ldy(&opcode.mode);
+                }
+                "SEC" => {
+                    self.sec();
                 }
                 "TAX" => {
                     self.tax();
@@ -106,6 +112,10 @@ impl CPU {
             }
             self.program_counter += (opcode.len - 1) as u16;
         }
+    }
+
+    fn clc(&mut self) {
+        self.status = self.status & 0b1111_1110
     }
 
     fn lda(&mut self, mode: &AddressingMode) {
@@ -127,6 +137,10 @@ impl CPU {
 
         self.reg_y = self.mem_read(addr);
         self.update_zero_n_negative_flag(self.reg_y)
+    }
+
+    fn sec(&mut self) {
+        self.status = self.status | 0b0000_0001
     }
 
     fn tax(&mut self) {
@@ -253,6 +267,14 @@ mod tests {
         let cpu = run_ops(vec![0xa2, 0xff, 0xe8, 0xe8, 0x00]);
 
         assert_eq!(cpu.reg_x, 1)
+    }
+
+    #[test]
+    fn test_clc_n_sec() {
+        let cpu = run_ops(vec![0x18, 0x38, 0x00]);
+        assert!(cpu.status & 0b0000_0001 == 1);
+        let cpu = run_ops(vec![0x38, 0x18, 0x00]);
+        assert!(cpu.status & 0b0000_0001 == 0);
     }
 
     #[test]
