@@ -84,6 +84,9 @@ impl CPU {
             let opcode = OPCODE_MAP.get(&code).unwrap();
 
             match opcode.name {
+                "AND" => {
+                    self.and(&opcode.mode)
+                }
                 "CLC" => {
                     self.clc();
                 }
@@ -92,6 +95,9 @@ impl CPU {
                 }
                 "CLI" => {
                     self.cli();
+                }
+                "CLV" => {
+                    self.clv();
                 }
                 "LDA" => {
                     self.lda(&opcode.mode);
@@ -126,6 +132,12 @@ impl CPU {
         }
     }
 
+    fn and(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.reg_a = self.reg_a & self.mem_read(addr);
+        self.update_zero_n_negative_flag(self.reg_a);
+    }
+
     fn clc(&mut self) {
         self.status = self.status & 0b1111_1110
     }
@@ -138,6 +150,9 @@ impl CPU {
         self.status = self.status & 0b1111_1011;
     }
 
+    fn clv(&mut self) {
+        self.status = self.status & 0b1101_1111;
+    }
 
     fn lda(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
@@ -312,6 +327,14 @@ mod tests {
         assert!(cpu.status & 0b0000_0100 != 0);
         let cpu = run_ops(vec![0x78, 0x58, 0x00]);
         assert!(cpu.status & 0b0000_0100 == 0);
+    }
+
+    #[test]
+    fn test_and_immediate() {
+        let cpu = run_ops(vec![0xa9, 0b0000_0001, 0x29, 0b0100_0011, 0x00]);
+        assert_eq!(cpu.reg_a, 0b000_0001);
+        assert!(cpu.status & 0b0000_0010 == 0);
+        assert!(cpu.status & 0b1000_0000 == 0);
     }
 
     #[test]
