@@ -133,6 +133,18 @@ impl CPU {
                 "LDY" => {
                     self.ldy(&opcode.mode);
                 }
+                "PHA" => {
+                    self.pha();
+                }
+                "PHP" => {
+                    self.php();
+                }
+                "PLA" => {
+                    self.pla();
+                }
+                "PLP" => {
+                    self.plp();
+                }
                 "SEC" => {
                     self.sec();
                 }
@@ -222,6 +234,23 @@ impl CPU {
 
         self.reg_y = self.mem_read(addr);
         self.update_zero_n_negative_flag(self.reg_y)
+    }
+
+    fn pha(&mut self) {
+        self.stack_push(self.reg_a)
+    }
+
+    fn php(&mut self) {
+        self.stack_push(self.status | 0b0011_0000)
+    }
+
+    fn pla(&mut self) {
+        self.reg_a = self.stack_pop();
+        self.update_zero_n_negative_flag(self.reg_a);
+    }
+
+    fn plp(&mut self) {
+        self.status = self.stack_pop();
     }
 
     fn sec(&mut self) {
@@ -570,5 +599,41 @@ mod tests {
         cpu.stack_push(0x10);
         let result = cpu.stack_pop();
         assert_eq!(result, 0x10)
+    }
+
+    #[test]
+    fn test_0x48_pha() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xa9, 0x15, 0x48, 0x00]);
+        cpu.reset();
+        cpu.run();
+        assert_eq!(cpu.stack_pop(), 0x15);
+    }
+
+    #[test]
+    fn test_0x08_php() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0x08, 0x00]);
+        assert_eq!(cpu.stack_pop(), 0b0011_0000);
+    }
+
+    #[test]
+    fn test_0x68_pla() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x68, 0x00]);
+        cpu.reset();
+        cpu.stack_push(0x15);
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0x15);
+    }
+
+    #[test]
+    fn test_0x28_plp() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x28, 0x00]);
+        cpu.reset();
+        cpu.stack_push(0b1100_0100);
+        cpu.run();
+        assert_eq!(cpu.status, 0b1100_0100);
     }
 }
