@@ -117,6 +117,15 @@ impl CPU {
                 "SEI" => {
                     self.sei();
                 }
+                "STA" => {
+                    self.sta(&opcode.mode);
+                }
+                "STX" => {
+                    self.stx(&opcode.mode);
+                }
+                "STY" => {
+                    self.sty(&opcode.mode)
+                }
                 "TAX" => {
                     self.tax();
                 }
@@ -185,6 +194,21 @@ impl CPU {
 
     fn sei(&mut self) {
         self.status = self.status | 0b0000_0100;
+    }
+
+    fn sta(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.mem_write(addr, self.reg_a);
+    }
+
+    fn stx(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.mem_write(addr, self.reg_x);
+    }
+
+    fn sty(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        self.mem_write(addr, self.reg_y);
     }
 
     fn tax(&mut self) {
@@ -399,6 +423,27 @@ mod tests {
         assert_eq!(cpu.reg_a, 0b000_0001);
         assert!(cpu.status & 0b0000_0010 == 0);
         assert!(cpu.status & 0b1000_0000 == 0);
+    }
+
+    #[test]
+    fn test_0x85_sta_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x85, 0x12, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0x05;
+        cpu.run();
+        let tmem = cpu.mem_read(0x12);
+        assert_eq!(tmem, 0x05);
+    }
+
+    #[test]
+    fn test_0x86_stx_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x86, 0x12, 0x00]);
+        cpu.reset();
+        cpu.reg_x = 0x05;
+        cpu.run();
+        assert_eq!(cpu.mem_read(0x12), 0x05);
     }
 
     #[test]
