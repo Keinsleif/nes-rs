@@ -19,6 +19,7 @@ pub struct CPU {
     pub reg_a: u8,
     pub reg_x: u8,
     pub reg_y: u8,
+    pub stack_pointer: u8,
     pub status: u8,
     pub program_counter: u16,
     memory: [u8; 0xFFFF],
@@ -30,6 +31,7 @@ impl CPU {
             reg_a: 0,
             reg_x: 0,
             reg_y: 0,
+            stack_pointer: 0,
             status: 0,
             program_counter: 0,
             memory: [0; 0xFFFF],
@@ -129,6 +131,21 @@ impl CPU {
                 "TAX" => {
                     self.tax();
                 }
+                "TAY" => {
+                    self.tay();
+                }
+                "TSX" => {
+                    self.tsx();
+                }
+                "TXA" => {
+                    self.txa();
+                }
+                "TXS" => {
+                    self.txs();
+                }
+                "TYA" => {
+                    self.tya();
+                }
                 "INX" => {
                     self.inx()
                 }
@@ -214,6 +231,31 @@ impl CPU {
     fn tax(&mut self) {
         self.reg_x = self.reg_a;
         self.update_zero_n_negative_flag(self.reg_x)
+    }
+
+    fn tay(&mut self) {
+        self.reg_y = self.reg_a;
+        self.update_zero_n_negative_flag(self.reg_y);
+    }
+
+    fn tsx(&mut self) {
+        self.reg_x = self.stack_pointer;
+        self.update_zero_n_negative_flag(self.reg_x);
+    }
+
+    fn txa(&mut self) {
+        self.reg_a = self.reg_x;
+        self.update_zero_n_negative_flag(self.reg_a);
+    }
+
+    fn txs(&mut self) {
+        self.stack_pointer = self.reg_x;
+        self.update_zero_n_negative_flag(self.stack_pointer);
+    }
+
+    fn tya(&mut self) {
+        self.reg_a = self.reg_y;
+        self.update_zero_n_negative_flag(self.reg_a);
     }
 
     fn inx(&mut self) {
@@ -444,6 +486,29 @@ mod tests {
         cpu.reg_x = 0x05;
         cpu.run();
         assert_eq!(cpu.mem_read(0x12), 0x05);
+    }
+
+    #[test]
+    fn test_transfar_opcodes() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xaa,0xa8,0x9a,0x00]);
+        cpu.reset();
+        cpu.reg_a = 0x04;
+        cpu.run();
+        assert_eq!(0x04, cpu.reg_x);
+        assert_eq!(0x04, cpu.reg_y);
+        assert_eq!(0x04, cpu.stack_pointer);
+        cpu.load(vec![0xba,0x8a,0x00]);
+        cpu.reset();
+        cpu.stack_pointer = 0x04;
+        cpu.run();
+        assert_eq!(0x04, cpu.reg_x);
+        assert_eq!(0x04, cpu.reg_a);
+        cpu.load(vec![0x98, 0x00]);
+        cpu.reset();
+        cpu.reg_y = 0x03;
+        cpu.run();
+        assert_eq!(0x03, cpu.reg_a);
     }
 
     #[test]
