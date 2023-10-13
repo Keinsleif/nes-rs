@@ -31,11 +31,34 @@ impl CPU {
             reg_a: 0,
             reg_x: 0,
             reg_y: 0,
-            stack_pointer: 0,
+            stack_pointer: 0xfd,
             status: 0,
             program_counter: 0,
             memory: [0; 0xFFFF],
         }
+    }
+
+    fn stack_push(&mut self, data: u8) {
+        self.mem_write(0x0100 as u16 + self.stack_pointer as u16, data);
+        self.stack_pointer = self.stack_pointer.wrapping_sub(1);
+    }
+
+    fn stack_pop(&mut self) -> u8 {
+        self.stack_pointer = self.stack_pointer.wrapping_add(1);
+        self.mem_read(0x0100 as u16 + self.stack_pointer as u16)
+    }
+
+    fn stack_push_u16(&mut self, data: u16) {
+        let high = (data >> 8) as u8;
+        let low = (data & 0b0000_1111) as u8;
+        self.stack_push(high);
+        self.stack_push(low);
+    }
+
+    fn stack_pop_u16(&mut self) -> u16 {
+        let low = self.stack_pop() as u16;
+        let high = self.stack_pop() as u16;
+        high << 8 | low
     }
 
     fn mem_read(&self, addr: u16) -> u8 {
@@ -539,5 +562,13 @@ mod tests {
         let mut cpu: CPU = CPU::new();
         cpu.mem_write(0xFFFC, 0x10);
         assert_eq!(cpu.memory[0xFFFC as usize], 0x10)
+    }
+
+    #[test]
+    fn test_stack_push_pop() {
+        let mut cpu = CPU::new();
+        cpu.stack_push(0x10);
+        let result = cpu.stack_pop();
+        assert_eq!(result, 0x10)
     }
 }
