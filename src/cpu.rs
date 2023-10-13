@@ -272,6 +272,70 @@ mod tests {
     }
 
     #[test]
+    fn test_0xa5_lda_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x10, 0x05);
+        cpu.load_and_run(vec![0xa5, 0x10, 0x00]);
+        assert_eq!(cpu.reg_a, 0x05);
+        assert!(cpu.status & 0b0000_0010 == 0);
+        assert!(cpu.status & 0b1000_0000 == 0);
+    }
+
+    #[test]
+    fn test_0xb5_lda_zero_page_x() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x10, 0x05);
+        cpu.load_and_run(vec![0xa2, 0x08, 0xb5, 0x08, 0x00]);
+        assert_eq!(cpu.reg_a, 0x05);
+        assert!(cpu.status & 0b0000_0010 == 0);
+        assert!(cpu.status & 0b1000_0000 == 0);
+    }
+
+    #[test]
+    fn test_0xad_lda_absolute() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x1020, 0x04);
+        cpu.load_and_run(vec![0xad, 0x20, 0x10, 0x00]);
+        assert_eq!(cpu.reg_a, 0x04);
+        assert!(cpu.status & 0b0000_0010 == 0);
+        assert!(cpu.status & 0b1000_0000 == 0);
+    }
+
+    #[test]
+    fn test_0xbd_lda_absolute_x() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x1020, 0x04);
+        cpu.load_and_run(vec![0xa2, 0x20, 0xbd, 0x00, 0x10, 0x00]);
+        assert_eq!(cpu.reg_a, 0x04);
+        assert!(cpu.status & 0b0000_0010 == 0);
+        assert!(cpu.status & 0b1000_0000 == 0);
+    }
+
+    #[test]
+    fn test_0xa1_lda_indirect_x() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x34, 0x34);
+        cpu.mem_write(0x35, 0x12);
+        cpu.mem_write_u16(0x1234, 0x04);
+        cpu.load_and_run(vec![0xa2, 0x04, 0xa1, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x04);
+        assert!(cpu.status & 0b0000_0010 == 0);
+        assert!(cpu.status & 0b1000_0000 == 0);
+    }
+
+    #[test]
+    fn test_0xb1_lda_indirect_y() {
+        let mut cpu = CPU::new();
+        cpu.mem_write(0x12, 0x30);
+        cpu.mem_write(0x13, 0x12);
+        cpu.mem_write_u16(0x1234, 0x03);
+        cpu.load_and_run(vec![0xa0, 0x04, 0xb1, 0x12, 0x00]);
+        assert_eq!(cpu.reg_a, 0x03);
+        assert!(cpu.status & 0b0000_0010 == 0);
+        assert!(cpu.status & 0b1000_0000 == 0);
+    }
+
+    #[test]
     fn test_0xa2_ldx_immediate() {
         let cpu = run_ops(vec![0xa2, 0x05, 0x00]);
         assert_eq!(cpu.reg_x, 0x05);
