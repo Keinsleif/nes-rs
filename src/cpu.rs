@@ -151,7 +151,7 @@ impl CPU {
     }
 
     fn clv(&mut self) {
-        self.status = self.status & 0b1101_1111;
+        self.status = self.status & 0b1011_1111;
     }
 
     fn lda(&mut self, mode: &AddressingMode) {
