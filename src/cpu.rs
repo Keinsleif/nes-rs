@@ -124,6 +124,24 @@ impl CPU {
                 "CLV" => {
                     self.clv();
                 }
+                "DEC" => {
+                    self.dec(&opcode.mode);
+                }
+                "DEX" => {
+                    self.dex()
+                }
+                "DEY" => {
+                    self.dey()
+                }
+                "INC" => {
+                    self.inc(&opcode.mode);
+                }
+                "INX" => {
+                    self.inx()
+                }
+                "INY" => {
+                    self.iny()
+                }
                 "LDA" => {
                     self.lda(&opcode.mode);
                 }
@@ -181,9 +199,6 @@ impl CPU {
                 "TYA" => {
                     self.tya();
                 }
-                "INX" => {
-                    self.inx()
-                }
                 "BRK" => {
                     return;
                 }
@@ -213,6 +228,40 @@ impl CPU {
 
     fn clv(&mut self) {
         self.status = self.status & 0b1011_1111;
+    }
+
+    fn dec(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let result = self.mem_read(addr).wrapping_sub(1);
+        self.mem_write(addr, result);
+        self.update_zero_n_negative_flag(result);
+    }
+
+    fn dex(&mut self) {
+        self.reg_x = self.reg_x.wrapping_sub(1);
+        self.update_zero_n_negative_flag(self.reg_x)
+    }
+
+    fn dey(&mut self) {
+        self.reg_y = self.reg_y.wrapping_sub(1);
+        self.update_zero_n_negative_flag(self.reg_y)
+    }
+
+    fn inc(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let result = self.mem_read(addr).wrapping_add(1);
+        self.mem_write(addr, result);
+        self.update_zero_n_negative_flag(result);
+    }
+
+    fn inx(&mut self) {
+        self.reg_x = self.reg_x.wrapping_add(1);
+        self.update_zero_n_negative_flag(self.reg_x)
+    }
+
+    fn iny(&mut self) {
+        self.reg_y = self.reg_y.wrapping_add(1);
+        self.update_zero_n_negative_flag(self.reg_y);
     }
 
     fn lda(&mut self, mode: &AddressingMode) {
@@ -308,11 +357,6 @@ impl CPU {
     fn tya(&mut self) {
         self.reg_a = self.reg_y;
         self.update_zero_n_negative_flag(self.reg_a);
-    }
-
-    fn inx(&mut self) {
-        self.reg_x = self.reg_x.wrapping_add(1);
-        self.update_zero_n_negative_flag(self.reg_x)
     }
 
     fn update_zero_n_negative_flag(&mut self, result: u8) {
@@ -635,5 +679,45 @@ mod tests {
         cpu.stack_push(0b1100_0100);
         cpu.run();
         assert_eq!(cpu.status, 0b1100_0100);
+    }
+
+    #[test]
+    fn test_0xc6_dec_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xc6, 0x14, 0x00]);
+        cpu.reset();
+        cpu.mem_write(0x14, 0x02);
+        cpu.run();
+        assert_eq!(cpu.mem_read(0x14), 0x01);
+    }
+
+    #[test]
+    fn test_0xca_dex() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xca, 0x00]);
+        cpu.reset();
+        cpu.reg_x = 0x03;
+        cpu.run();
+        assert_eq!(cpu.reg_x, 0x02);
+    }
+
+    #[test]
+    fn test_0xe6_inc_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xe6, 0x14, 0x00]);
+        cpu.reset();
+        cpu.mem_write(0x14, 0x13);
+        cpu.run();
+        assert_eq!(cpu.mem_read(0x14), 0x14);
+    }
+
+    #[test]
+    fn test_0xe8_inx() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xe8, 0x00]);
+        cpu.reset();
+        cpu.reg_x = 0x04;
+        cpu.run();
+        assert_eq!(cpu.reg_x, 0x05);
     }
 }
