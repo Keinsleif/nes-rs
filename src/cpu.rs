@@ -127,6 +127,15 @@ impl CPU {
                 "CLV" => {
                     self.clv();
                 }
+                "CMP" => {
+                    self.cmp(&opcode.mode);
+                }
+                "CPX" => {
+                    self.cpx(&opcode.mode);
+                }
+                "CPY" => {
+                    self.cpy(&opcode.mode);
+                }
                 "DEC" => {
                     self.dec(&opcode.mode);
                 }
@@ -258,6 +267,34 @@ impl CPU {
 
     fn clv(&mut self) {
         self.status = self.status & 0b1011_1111;
+    }
+
+    fn compare(&mut self, mode: &AddressingMode, compare_with: u8) {
+        let addr = self.get_operand_address(mode);
+        let base_data = self.mem_read(addr);
+        let data = (base_data as i8).wrapping_neg() as u8;
+
+        let result = compare_with as u16 + data as u16;
+
+        if result > 0xff {
+            self.sec();
+        } else {
+            self.clc();
+        }
+
+        self.update_zero_n_negative_flag(result as u8);
+    }
+
+    fn cmp(&mut self, mode: &AddressingMode) {
+        self.compare(mode, self.reg_a);
+    }
+
+    fn cpx(&mut self, mode: &AddressingMode) {
+        self.compare(mode, self.reg_x);
+    }
+
+    fn cpy(&mut self, mode: &AddressingMode) {
+        self.compare(mode, self.reg_y);
     }
 
     fn dec(&mut self, mode: &AddressingMode) {
@@ -840,7 +877,7 @@ mod tests {
     }
 
     #[test]
-    fn test_oxe9_sbc_immediate_overflow_flag() {
+    fn test_0xe9_sbc_immediate_overflow_flag() {
         let mut cpu = CPU::new();
         cpu.load(vec![0x38, 0xe9, 0xb0, 0x00]);
         cpu.reset();
@@ -850,12 +887,27 @@ mod tests {
     }
 
     #[test]
-    fn test_oxe9_sbc_immediate_carry_sub() {
+    fn test_0xe9_sbc_immediate_carry_sub() {
         let mut cpu = CPU::new();
         cpu.load(vec![0x38, 0xe9, 0xf0, 0xa9, 0x10, 0xe9, 0x01, 0x00]);
         cpu.reset();
         cpu.reg_a = 0x50;
         cpu.run();
         assert_eq!(cpu.reg_a, 0x0e);
+    }
+
+    #[test]
+    fn test_0xc9_cmp_immediate() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0xc9, 0x10, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0x10;
+        cpu.run();
+        assert!(cpu.status & 0b0000_0010 == 0b0000_0010);
+        assert!(cpu.status & 0b0000_0001 == 0b0000_0001);
+        cpu.reset();
+        cpu.reg_a = 0x05;
+        cpu.run();
+        assert!(cpu.status & 0b0000_0001 == 0);
     }
 }
