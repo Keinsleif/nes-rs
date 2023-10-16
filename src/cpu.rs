@@ -187,6 +187,12 @@ impl CPU {
                 "PLP" => {
                     self.plp();
                 }
+                "ROL" => {
+                    self.rol(&opcode.mode);
+                }
+                "ROR" => {
+                    self.ror(&opcode.mode);
+                }
                 "SBC" => {
                     self.sbc(&opcode.mode);
                 }
@@ -445,6 +451,72 @@ impl CPU {
 
     fn plp(&mut self) {
         self.status = self.stack_pop();
+    }
+
+    fn rol(&mut self, mode: &AddressingMode,) {
+        let carry = self.status & 0b0000_0001 != 0;
+        match mode {
+            AddressingMode::NoneAddressing => {
+                if self.reg_a & 0b1000_0000 != 0 {
+                    self.status |= 0b0000_0001;
+                } else {
+                    self.status &= 0b1111_1110;
+                }
+                self.reg_a <<= 1;
+                if carry {
+                    self.reg_a |= 0b0000_0001;
+                }
+                self.update_zero_n_negative_flag(self.reg_a)
+            }
+            _ => {
+                let addr = self.get_operand_address(mode);
+                let data = self.mem_read(addr);
+                if data & 0b1000_0000 != 0 {
+                    self.status |= 0b0000_0001;
+                } else {
+                    self.status &= 0b1111_1110;
+                }
+                let mut result = data << 1;
+                if carry {
+                    result |= 0b0000_0001;
+                }
+                self.mem_write(addr, result);
+                self.update_zero_n_negative_flag(result);
+            }
+        }
+    }
+
+    fn ror(&mut self, mode: &AddressingMode) {
+        let carry = self.status & 0b0000_0001 != 0;
+        match mode {
+            AddressingMode::NoneAddressing => {
+                if self.reg_a & 0b0000_0001 != 0 {
+                    self.status |= 0b0000_0001;
+                } else {
+                    self.status &= 0b1111_1110;
+                }
+                self.reg_a >>= 1;
+                if carry {
+                    self.reg_a |= 0b1000_0000;
+                }
+                self.update_zero_n_negative_flag(self.reg_a)
+            }
+            _ => {
+                let addr = self.get_operand_address(mode);
+                let data = self.mem_read(addr);
+                if data & 0b0000_0001 != 0 {
+                    self.status |= 0b0000_0001;
+                } else {
+                    self.status &= 0b1111_1110;
+                }
+                let mut result = data >> 1;
+                if carry {
+                    result |= 0b1000_0000;
+                }
+                self.mem_write(addr, result);
+                self.update_zero_n_negative_flag(result);
+            }
+        }
     }
 
     fn sbc(&mut self, mode: &AddressingMode) {
@@ -1020,6 +1092,28 @@ mod tests {
         cpu.reg_a = 0b1001_0011;
         cpu.run();
         assert_eq!(cpu.reg_a, 0b0100_1001);
+        assert!(cpu.status & 0b0000_0001 == 0b0000_0001);
+    }
+
+    #[test]
+    fn test_0x2a_rol() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x2a, 0x2a, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0b1001_0011;
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0b0100_1101);
+        assert!(cpu.status & 0b0000_0001 == 0b0000_0000);
+    }
+
+    #[test]
+    fn test_0x6a_ror() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x6a, 0x6a, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0b1001_0011;
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0b1010_0100);
         assert!(cpu.status & 0b0000_0001 == 0b0000_0001);
     }
 }
