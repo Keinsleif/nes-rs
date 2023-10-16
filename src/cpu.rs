@@ -109,6 +109,9 @@ impl CPU {
             let opcode = OPCODE_MAP.get(&code).unwrap();
 
             match opcode.name {
+                "ADC" => {
+                    self.adc(&opcode.mode);
+                }
                 "AND" => {
                     self.and(&opcode.mode)
                 }
@@ -163,6 +166,9 @@ impl CPU {
                 "PLP" => {
                     self.plp();
                 }
+                "SBC" => {
+                    self.sbc(&opcode.mode);
+                }
                 "SEC" => {
                     self.sec();
                 }
@@ -206,6 +212,30 @@ impl CPU {
             }
             self.program_counter += (opcode.len - 1) as u16;
         }
+    }
+
+    fn adc(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let data = self.mem_read(addr);
+
+        let carry = self.status & 0b0000_0001;
+
+        let result = self.reg_a as u16 + data as u16 + carry as u16;
+
+        if result > 0xff {
+            self.sec();
+        } else {
+            self.clc();
+        }
+
+        if (self.reg_a ^ result as u8) & (data ^ result as u8) & 0x80 != 0 {
+            self.status = self.status | 0b0100_0000;
+        } else {
+            self.status = self.status & 0b1011_1111;
+        }
+
+        self.reg_a = result as u8;
+        self.update_zero_n_negative_flag(self.reg_a);
     }
 
     fn and(&mut self, mode: &AddressingMode) {
@@ -300,6 +330,31 @@ impl CPU {
 
     fn plp(&mut self) {
         self.status = self.stack_pop();
+    }
+
+    fn sbc(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let base_data = self.mem_read(addr);
+        let data = (base_data as i8).wrapping_neg().wrapping_sub(1) as u8;
+
+        let carry = self.status & 0b0000_0001;
+
+        let result = self.reg_a as u16 + data as u16 + carry as u16;
+
+        if result > 0xff {
+            self.sec();
+        } else {
+            self.clc();
+        }
+
+        if (self.reg_a ^ result as u8) & (data ^ result as u8) & 0x80 != 0 {
+            self.status = self.status | 0b0100_0000;
+        } else {
+            self.status = self.status & 0b1011_1111;
+        }
+
+        self.reg_a = result as u8;
+        self.update_zero_n_negative_flag(self.reg_a);
     }
 
     fn sec(&mut self) {
@@ -719,5 +774,88 @@ mod tests {
         cpu.reg_x = 0x04;
         cpu.run();
         assert_eq!(cpu.reg_x, 0x05);
+    }
+
+    #[test]
+    fn test_0x69_adc_immediate() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x18, 0x69, 0x10, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0x50;
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0x60);
+    }
+
+    #[test]
+    fn test_0x69_adc_immediate_carry_flag() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x18, 0x69, 0x50, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0xd0;
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0x20);
+        assert!(cpu.status & 0b0000_0001 == 0b0000_0001);
+    }
+
+    #[test]
+    fn test_0x69_adc_immediate_overflow_flag() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x18, 0x69, 0x50, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0x50;
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0xa0);
+        assert!(cpu.status & 0b0100_0000 == 0b0100_0000);
+    }
+
+    #[test]
+    fn test_0x69_adc_immediate_carry_add() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x18, 0x69, 0x50, 0xa9, 0x10, 0x69, 0x50, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0xFE;
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0x61);
+        assert!(cpu.status & 0b0000_0001 != 0b0000_0001);
+    }
+
+    #[test]
+    fn test_0xe9_sbc_immediate() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x38, 0xe9, 0xf0, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0x50;
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0x60);
+    }
+
+    #[test]
+    fn test_0xe9_sbc_immediate_carry_flag() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x38, 0xe9, 0xf0, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0x50;
+        cpu.run();
+        assert!(cpu.status & 0b0000_0001 == 0b0000_0000);
+    }
+
+    #[test]
+    fn test_oxe9_sbc_immediate_overflow_flag() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x38, 0xe9, 0xb0, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0x50;
+        cpu.run();
+        assert!(cpu.status & 0b0100_0000 == 0b0100_0000);
+    }
+
+    #[test]
+    fn test_oxe9_sbc_immediate_carry_sub() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x38, 0xe9, 0xf0, 0xa9, 0x10, 0xe9, 0x01, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0x50;
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0x0e);
     }
 }
