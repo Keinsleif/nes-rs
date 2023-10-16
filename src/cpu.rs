@@ -115,6 +115,9 @@ impl CPU {
                 "AND" => {
                     self.and(&opcode.mode)
                 }
+                "ASL" => {
+                    self.asl(&opcode.mode);
+                }
                 "CLC" => {
                     self.clc();
                 }
@@ -165,6 +168,9 @@ impl CPU {
                 }
                 "LDY" => {
                     self.ldy(&opcode.mode);
+                }
+                "LSR" => {
+                    self.lsr(&opcode.mode);
                 }
                 "ORA" => {
                     self.ora(&opcode.mode);
@@ -257,6 +263,32 @@ impl CPU {
         let addr = self.get_operand_address(mode);
         self.reg_a = self.reg_a & self.mem_read(addr);
         self.update_zero_n_negative_flag(self.reg_a);
+    }
+
+    fn asl(&mut self, mode: &AddressingMode) {
+        match mode {
+            AddressingMode::NoneAddressing => {
+                if self.reg_a & 0b1000_0000 != 0 {
+                    self.status |= 0b0000_0001;
+                } else {
+                    self.status &= 0b1111_1110;
+                }
+                self.reg_a <<= 1;
+                self.update_zero_n_negative_flag(self.reg_a)
+            }
+            _ => {
+                let addr = self.get_operand_address(mode);
+                let data = self.mem_read(addr);
+                if data & 0b1000_0000 != 0 {
+                    self.status |= 0b0000_0001;
+                } else {
+                    self.status &= 0b1111_1110;
+                }
+                let result = data << 1;
+                self.mem_write(addr, result);
+                self.update_zero_n_negative_flag(result);
+            }
+        }
     }
 
     fn clc(&mut self) {
@@ -363,6 +395,32 @@ impl CPU {
 
         self.reg_y = self.mem_read(addr);
         self.update_zero_n_negative_flag(self.reg_y)
+    }
+
+    fn lsr(&mut self, mode: &AddressingMode) {
+        match mode {
+            AddressingMode::NoneAddressing => {
+                if self.reg_a & 0b0000_0001 != 0 {
+                    self.status |= 0b0000_0001;
+                } else {
+                    self.status &= 0b1111_1110;
+                }
+                self.reg_a >>= 1;
+                self.update_zero_n_negative_flag(self.reg_a)
+            }
+            _ => {
+                let addr = self.get_operand_address(mode);
+                let data = self.mem_read(addr);
+                if data & 0b0000_0001 != 0 {
+                    self.status |= 0b0000_0001;
+                } else {
+                    self.status &= 0b1111_1110;
+                }
+                let result = data >> 1;
+                self.mem_write(addr, result);
+                self.update_zero_n_negative_flag(result);
+            }
+        }
     }
 
     fn ora(&mut self, mode: &AddressingMode) {
@@ -941,5 +999,27 @@ mod tests {
     fn test_0x49_eor_immediate() {
         let cpu = run_ops(vec![0xa9, 0b0100_0100, 0x49, 0b0000_0101, 0x00]);
         assert_eq!(cpu.reg_a, 0b0100_0001);
+    }
+
+    #[test]
+    fn test_0x0a_asl() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x0a, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0b1001_0100;
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0b0010_1000);
+        assert!(cpu.status & 0b0000_0001 == 0b0000_0001);
+    }
+
+    #[test]
+    fn test_0x4a_lsr() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x4a, 0x00]);
+        cpu.reset();
+        cpu.reg_a = 0b1001_0011;
+        cpu.run();
+        assert_eq!(cpu.reg_a, 0b0100_1001);
+        assert!(cpu.status & 0b0000_0001 == 0b0000_0001);
     }
 }
