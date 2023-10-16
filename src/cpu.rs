@@ -145,6 +145,9 @@ impl CPU {
                 "DEY" => {
                     self.dey()
                 }
+                "EOR" => {
+                    self.eor(&opcode.mode);
+                }
                 "INC" => {
                     self.inc(&opcode.mode);
                 }
@@ -162,6 +165,9 @@ impl CPU {
                 }
                 "LDY" => {
                     self.ldy(&opcode.mode);
+                }
+                "ORA" => {
+                    self.ora(&opcode.mode);
                 }
                 "PHA" => {
                     self.pha();
@@ -314,6 +320,13 @@ impl CPU {
         self.update_zero_n_negative_flag(self.reg_y)
     }
 
+    fn eor(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let data = self.mem_read(addr);
+        self.reg_a ^= data;
+        self.update_zero_n_negative_flag(self.reg_a);
+    }
+
     fn inc(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let result = self.mem_read(addr).wrapping_add(1);
@@ -350,6 +363,13 @@ impl CPU {
 
         self.reg_y = self.mem_read(addr);
         self.update_zero_n_negative_flag(self.reg_y)
+    }
+
+    fn ora(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let data = self.mem_read(addr);
+        self.reg_a |= data;
+        self.update_zero_n_negative_flag(self.reg_a);
     }
 
     fn pha(&mut self) {
@@ -909,5 +929,17 @@ mod tests {
         cpu.reg_a = 0x05;
         cpu.run();
         assert!(cpu.status & 0b0000_0001 == 0);
+    }
+
+    #[test]
+    fn test_0x09_ora_immediate() {
+        let cpu = run_ops(vec![0xa9, 0b0100_0100, 0x09, 0b0000_0101, 0x00]);
+        assert_eq!(cpu.reg_a, 0b0100_0101);
+    }
+
+    #[test]
+    fn test_0x49_eor_immediate() {
+        let cpu = run_ops(vec![0xa9, 0b0100_0100, 0x49, 0b0000_0101, 0x00]);
+        assert_eq!(cpu.reg_a, 0b0100_0001);
     }
 }
