@@ -123,7 +123,7 @@ pub static CPU_OPS_CODES: Lazy<Vec<OpCode>> = Lazy::new(|| {vec![
     OpCode::new(0xC8, "INY", 1, 2, AddressingMode::NoneAddressing),
 
     OpCode::new(0x4C, "JMP", 3, 3, AddressingMode::NoneAddressing),
-    OpCode::new(0x6C, "JMP", 3, 5, AddressingMode::NoneAddressing),
+    OpCode::new(0x6C, "JMP", 3, 5, AddressingMode::Indirect),
 
     OpCode::new(0x20, "JSR", 3, 6, AddressingMode::NoneAddressing),
 

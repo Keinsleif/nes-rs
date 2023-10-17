@@ -10,6 +10,7 @@ pub enum AddressingMode {
     Absolute,
     Absolute_X,
     Absolute_Y,
+    Indirect,
     Indirect_X,
     Indirect_Y,
     NoneAddressing,
@@ -105,6 +106,7 @@ impl CPU {
         loop {
             let code = self.mem_read(self.program_counter);
             self.program_counter += 1;
+            let pc_state = self.program_counter;
 
             let opcode = OPCODE_MAP.get(&code).unwrap();
 
@@ -159,6 +161,9 @@ impl CPU {
                 }
                 "INY" => {
                     self.iny()
+                }
+                "JMP" => {
+                    self.jmp(&opcode.mode);
                 }
                 "LDA" => {
                     self.lda(&opcode.mode);
@@ -237,7 +242,9 @@ impl CPU {
                 }
                 _ => todo!(""),
             }
-            self.program_counter += (opcode.len - 1) as u16;
+            if pc_state == self.program_counter {
+                self.program_counter += (opcode.len - 1) as u16;
+            }
         }
     }
 
@@ -380,6 +387,29 @@ impl CPU {
     fn iny(&mut self) {
         self.reg_y = self.reg_y.wrapping_add(1);
         self.update_zero_n_negative_flag(self.reg_y);
+    }
+
+    fn jmp(&mut self, mode: &AddressingMode) {
+        self.program_counter = match mode {
+            AddressingMode::NoneAddressing => {
+                let mem_addr = self.mem_read_u16(self.program_counter);
+                mem_addr
+            }
+            AddressingMode::Indirect => {
+                let addr = self.mem_read_u16(self.program_counter);
+                let indirect_addr = if addr & 0x00ff == 0x00ff {
+                    let lo = self.mem_read(addr) as u16;
+                    let hi = self.mem_read(addr & 0xff00) as u16;
+                    hi << 8 | lo
+                } else {
+                    self.mem_read_u16(addr)
+                };
+                indirect_addr
+            }
+            _ => {
+                panic!("Adressing mode {:?} is not supported", mode);
+            }
+        }
     }
 
     fn lda(&mut self, mode: &AddressingMode) {
@@ -635,6 +665,9 @@ impl CPU {
             AddressingMode::Absolute_Y => {
                 let pos = self.mem_read_u16(self.program_counter);
                 pos.wrapping_add(self.reg_y as u16)
+            }
+            AddressingMode::Indirect => {
+                panic!("Adressing Mode {:?} is not supported in this function", mode);
             }
             AddressingMode::Indirect_X => {
                 let base = self.mem_read(self.program_counter);
@@ -1115,5 +1148,11 @@ mod tests {
         cpu.run();
         assert_eq!(cpu.reg_a, 0b1010_0100);
         assert!(cpu.status & 0b0000_0001 == 0b0000_0001);
+    }
+
+    #[test]
+    fn test_0x4c_jmp() {
+        let cpu = run_ops(vec![0x4c, 0x04, 0x80, 0x00 ,0xa9, 0x15, 0x00]);
+        assert_eq!(cpu.reg_a, 0x15);
     }
 }
