@@ -120,6 +120,9 @@ impl CPU {
                 "ASL" => {
                     self.asl(&opcode.mode);
                 }
+                "BIT" => {
+                    self.bit(&opcode.mode);
+                }
                 "BCC" => {
                     self.branch(self.status & 0b0000_0001 == 0);
                 }
@@ -334,6 +337,26 @@ impl CPU {
                 self.mem_write(addr, result);
                 self.update_zero_n_negative_flag(result);
             }
+        }
+    }
+
+    fn bit(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let data = self.mem_read(addr);
+        if self.reg_a & data == 0 {
+            self.status |= 0b0000_0010;
+        } else {
+            self.status &= 0b1111_1101;
+        }
+        if data & 0b0100_0000 != 0 {
+            self.status |= 0b0100_0000;
+        } else {
+            self.status &= 0b1011_1111;
+        }
+        if data & 0b1000_0000 != 0 {
+            self.status |= 0b1000_0000;
+        } else {
+            self.status &= 0b0111_1111;
         }
     }
 
@@ -1285,5 +1308,18 @@ mod tests {
         let cpu = run_ops(vec![0x20, 0x06, 0x80, 0xa9, 0x20, 0x00, 0xa2, 0x10, 0x60]);
         assert_eq!(cpu.reg_a, 0x20);
         assert_eq!(cpu.reg_x, 0x10);
+    }
+
+    #[test]
+    fn test_0x24_bit_zero_page() {
+        let mut cpu = CPU::new();
+        cpu.load(vec![0x24, 0x40, 0x00]);
+        cpu.reset();
+        cpu.mem_write(0x40, 0b1100_0001);
+        cpu.reg_a = 0b0000_0000;
+        cpu.run();
+        assert!(cpu.status & 0b1000_0000 != 0);
+        assert!(cpu.status & 0b0100_0000 != 0);
+        assert!(cpu.status & 0b0000_0010 != 0);
     }
 }
