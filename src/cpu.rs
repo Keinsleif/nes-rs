@@ -120,6 +120,30 @@ impl CPU {
                 "ASL" => {
                     self.asl(&opcode.mode);
                 }
+                "BCC" => {
+                    self.branch(self.status & 0b0000_0001 == 0);
+                }
+                "BCS" => {
+                    self.branch(self.status & 0b0000_0001 != 0);
+                }
+                "BEQ" => {
+                    self.branch(self.status & 0b0000_0010 != 0);
+                }
+                "BMI" => {
+                    self.branch(self.status & 0b1000_0000 != 0);
+                }
+                "BNE" => {
+                    self.branch(self.status & 0b0000_0010 == 0);
+                }
+                "BPL" => {
+                    self.branch(self.status & 0b1000_0000 == 0);
+                }
+                "BVC" => {
+                    self.branch(self.status & 0b0100_0000 == 0);
+                }
+                "BVS" => {
+                    self.branch(self.status & 0b0100_0000 != 0);
+                }
                 "CLC" => {
                     self.clc();
                 }
@@ -301,6 +325,14 @@ impl CPU {
                 self.mem_write(addr, result);
                 self.update_zero_n_negative_flag(result);
             }
+        }
+    }
+
+    fn branch(&mut self, condition: bool) {
+        if condition {
+            let jump = self.mem_read(self.program_counter) as i8;
+            let jump_addr = self.program_counter.wrapping_add(1).wrapping_add(jump as u16);
+            self.program_counter = jump_addr;
         }
     }
 
@@ -1154,5 +1186,72 @@ mod tests {
     fn test_0x4c_jmp() {
         let cpu = run_ops(vec![0x4c, 0x04, 0x80, 0x00 ,0xa9, 0x15, 0x00]);
         assert_eq!(cpu.reg_a, 0x15);
+    }
+
+    #[test]
+    fn test_0x90_bcc() {
+        let cpu = run_ops(vec![0xa9, 0x01, 0xc9, 0x20, 0x90, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x30);
+        let cpu = run_ops(vec![0xa9, 0x10, 0xc9, 0x01, 0x90, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x10);
+
+    }
+
+    #[test]
+    fn test_0xb0_bcs() {
+        let cpu = run_ops(vec![0xa9, 0x01, 0xc9, 0x01, 0xb0, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x30);
+        let cpu = run_ops(vec![0xa9, 0x10, 0xc9, 0x01, 0xb0, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x30);
+        let cpu = run_ops(vec![0xa9, 0x01, 0xc9, 0x10, 0xb0, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x01);
+    }
+
+    #[test]
+    fn test_0xf0_beq() {
+        let cpu = run_ops(vec![0xa9, 0x01, 0xc9, 0x01, 0xf0, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x30);
+        let cpu = run_ops(vec![0xa9, 0x01, 0xc9, 0x02, 0xf0, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x01);
+    }
+
+    #[test]
+    fn test_0x30_bmi() {
+        let cpu = run_ops(vec![0xa9, 0x20, 0xc9, 0x10, 0x30, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x20);
+        let cpu = run_ops(vec![0xa9, 0x10, 0xc9, 0x20, 0x30, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x30);
+    }
+
+    #[test]
+    fn test_0xd0_bne() {
+        let cpu = run_ops(vec![0xa9, 0x20, 0xc9, 0x10, 0xd0, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x30);
+        let cpu = run_ops(vec![0xa9, 0x20, 0xc9, 0x20, 0xd0, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x20);
+    }
+
+    #[test]
+    fn test_0x10_bpl() {
+        let cpu = run_ops(vec![0xa9, 0x20, 0xc9, 0x10, 0x10, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x30);
+        let cpu = run_ops(vec![0xa9, 0x20, 0xc9, 0x30, 0x10, 0x01, 0x00, 0xa9, 0x30, 0x00]);
+        assert_eq!(cpu.reg_a, 0x20);
+    }
+
+    #[test]
+    fn test_0x50_bvc() {
+        let cpu = run_ops(vec![0xa9, 0xa0, 0x69, 0xa0, 0x50, 0x01, 0x00, 0xa2, 0x01, 0x00]);
+        assert_eq!(cpu.reg_x, 0x00);
+        let cpu = run_ops(vec![0xa9, 0x10, 0x69, 0x10, 0x50, 0x01, 0x00, 0xa2, 0x01, 0x00]);
+        assert_eq!(cpu.reg_x, 0x01);
+    }
+
+    #[test]
+    fn test_0x70_bvs() {
+        let cpu = run_ops(vec![0xa9, 0xa0, 0x69, 0x01, 0x70, 0x01, 0x00, 0xa2, 0x01, 0x00]);
+        assert_eq!(cpu.reg_x, 0x00);
+        let cpu = run_ops(vec![0xa9, 0xa0, 0x69, 0xa0, 0x70, 0x01, 0x00, 0xa2, 0x01, 0x00]);
+        assert_eq!(cpu.reg_x, 0x01);
     }
 }
