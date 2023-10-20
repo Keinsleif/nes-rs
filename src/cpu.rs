@@ -189,6 +189,9 @@ impl CPU {
                 "JMP" => {
                     self.jmp(&opcode.mode);
                 }
+                "JSR" => {
+                    self.jsr();
+                }
                 "LDA" => {
                     self.lda(&opcode.mode);
                 }
@@ -221,6 +224,9 @@ impl CPU {
                 }
                 "ROR" => {
                     self.ror(&opcode.mode);
+                }
+                "RTS" => {
+                    self.rts();
                 }
                 "SBC" => {
                     self.sbc(&opcode.mode);
@@ -444,6 +450,11 @@ impl CPU {
         }
     }
 
+    fn jsr(&mut self) {
+        self.stack_push_u16(self.program_counter + 2 - 1 );
+        self.program_counter = self.mem_read_u16(self.program_counter);
+    }
+
     fn lda(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
 
@@ -579,6 +590,10 @@ impl CPU {
                 self.update_zero_n_negative_flag(result);
             }
         }
+    }
+
+    fn rts(&mut self) {
+        self.program_counter = self.stack_pop_u16() + 1;
     }
 
     fn sbc(&mut self, mode: &AddressingMode) {
@@ -1253,5 +1268,12 @@ mod tests {
         assert_eq!(cpu.reg_x, 0x00);
         let cpu = run_ops(vec![0xa9, 0xa0, 0x69, 0xa0, 0x70, 0x01, 0x00, 0xa2, 0x01, 0x00]);
         assert_eq!(cpu.reg_x, 0x01);
+    }
+
+    #[test]
+    fn test_0x20_jsr_n_0x60_rts() {
+        let cpu = run_ops(vec![0x20, 0x06, 0x80, 0xa9, 0x20, 0x00, 0xa2, 0x10, 0x60]);
+        assert_eq!(cpu.reg_a, 0x20);
+        assert_eq!(cpu.reg_x, 0x10);
     }
 }
