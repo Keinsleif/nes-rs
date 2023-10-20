@@ -207,6 +207,7 @@ impl CPU {
                 "LSR" => {
                     self.lsr(&opcode.mode);
                 }
+                "NOP" => {}
                 "ORA" => {
                     self.ora(&opcode.mode);
                 }
