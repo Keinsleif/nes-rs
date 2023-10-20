@@ -228,6 +228,9 @@ impl CPU {
                 "RTS" => {
                     self.rts();
                 }
+                "RTI" => {
+                    self.rti();
+                }
                 "SBC" => {
                     self.sbc(&opcode.mode);
                 }
@@ -590,6 +593,13 @@ impl CPU {
                 self.update_zero_n_negative_flag(result);
             }
         }
+    }
+
+    fn rti(&mut self) {
+        self.status = self.stack_pop();
+        self.status &= 0b1110_1111;
+        self.status |= 0b0010_0000;
+        self.program_counter = self.stack_pop_u16();
     }
 
     fn rts(&mut self) {
