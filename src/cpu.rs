@@ -92,6 +92,8 @@ impl CPU {
     pub fn reset(&mut self) {
         self.reg_a = 0;
         self.reg_x = 0;
+        self.reg_y = 0;
+        self.stack_pointer = 0xfd;
         self.status = 0;
 
         self.program_counter = self.mem_read_u16(0xFFFC)
