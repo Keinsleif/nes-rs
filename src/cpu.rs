@@ -560,6 +560,8 @@ impl CPU {
 
     fn plp(&mut self) {
         self.status = self.stack_pop();
+        self.status &= 0b1110_1111;
+        self.status |= 0b0010_0000;
     }
 
     fn rol(&mut self, mode: &AddressingMode,) {
