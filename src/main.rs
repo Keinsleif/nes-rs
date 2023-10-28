@@ -2,7 +2,7 @@ pub mod cpu;
 pub mod bus;
 pub mod opcodes;
 
-use cpu::CPU;
+use cpu::{CPU, Mem};
 use rand::Rng;
 use sdl2::{pixels::{PixelFormatEnum, Color}, EventPump, event::Event, keyboard::Keycode};
 
