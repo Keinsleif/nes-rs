@@ -752,6 +752,12 @@ impl CPU {
     fn get_operand_address(&self, mode: &AddressingMode) -> u16 {
         match mode {
             AddressingMode::Immediate => self.program_counter,
+            _ => self.get_absolute_address(mode, self.program_counter),
+        }
+    }
+
+    pub fn get_absolute_address(&self, mode: &AddressingMode, addr: u16) -> u16 {
+        match mode {
             AddressingMode::ZeroPage => self.mem_read(self.program_counter) as u16,
             AddressingMode::ZeroPage_X => {
                 let pos = self.mem_read(self.program_counter);
@@ -787,7 +793,7 @@ impl CPU {
                 let deref_base = (high as u16) << 8 | (low as u16);
                 deref_base.wrapping_add(self.reg_y as u16)
             }
-            AddressingMode::NoneAddressing => {
+            _ => {
                 panic!("Addressing Mode {:?} is not supported", mode);
             }
         }
