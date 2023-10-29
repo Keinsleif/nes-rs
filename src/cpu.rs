@@ -56,7 +56,7 @@ impl Mem for CPU {
 }
 
 impl CPU {
-    pub fn new() -> Self {
+    pub fn new(bus: Bus) -> Self {
         CPU {
             reg_a: 0,
             reg_x: 0,
@@ -64,7 +64,7 @@ impl CPU {
             stack_pointer: 0xfd,
             status: 0,
             program_counter: 0,
-            bus: Bus::new(),
+            bus,
         }
     }
 
