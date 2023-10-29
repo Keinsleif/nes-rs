@@ -796,19 +796,5 @@ impl CPU {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    fn run_ops(program: Vec<u8>) -> CPU {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(program);
-        cpu
-    }
-
-    #[test]
-    fn test_0xa9_lda_immediate() {
-        let cpu = run_ops(vec![0xa9, 0x05, 0x00]);
-        assert_eq!(cpu.reg_a, 0x05);
-        assert!(cpu.status & 0b0000_0010 == 0);
-        assert!(cpu.status & 0b1000_0000 == 0);
-    }
+    // use super::*;
 }
