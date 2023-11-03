@@ -36,7 +36,8 @@ impl Mem for Bus {
             }
             PPU_REGISTERS ..= PPU_REGISTERS_MIRRORS_END => {
                 let _mirror_down_addr = addr & 0b00100000_00000111;
-                todo!("ppu is not supported yet")
+                // todo!("ppu is not supported yet");
+                0
             }
             0x8000 ..= 0xFFFF => self.read_prg_rom(addr),
             _ => {
@@ -53,7 +54,7 @@ impl Mem for Bus {
             }
             PPU_REGISTERS ..= PPU_REGISTERS_MIRRORS_END => {
                 let _mirror_down_addr = addr & 0b00100000_00000111;
-                todo!("ppu is not supported yet");
+                // todo!("ppu is not supported yet");
             }
             0x8000 ..= 0xFFFF => {
                 panic!("Attempt to write to Cartridge ROM space")
