@@ -408,18 +408,15 @@ impl CPU {
 
     fn compare(&mut self, mode: &AddressingMode, compare_with: u8) {
         let addr = self.get_operand_address(mode);
-        let base_data = self.mem_read(addr);
-        let data = (base_data as i8).wrapping_neg() as u8;
+        let data = self.mem_read(addr);
 
-        let result = compare_with as u16 + data as u16;
-
-        if result > 0xff {
+        if data <= compare_with {
             self.sec();
         } else {
             self.clc();
         }
 
-        self.update_zero_n_negative_flag(result as u8);
+        self.update_zero_n_negative_flag(compare_with.wrapping_sub(data));
     }
 
     fn cmp(&mut self, mode: &AddressingMode) {
