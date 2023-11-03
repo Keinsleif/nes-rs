@@ -62,7 +62,7 @@ impl CPU {
             reg_x: 0,
             reg_y: 0,
             stack_pointer: 0xfd,
-            status: 0,
+            status: 0b0010_0100,
             program_counter: 0,
             bus,
         }
@@ -102,7 +102,7 @@ impl CPU {
         self.reg_x = 0;
         self.reg_y = 0;
         self.stack_pointer = 0xfd;
-        self.status = 0;
+        self.status = 0b0010_0100;
 
         self.program_counter = self.mem_read_u16(0xFFFC)
     }
