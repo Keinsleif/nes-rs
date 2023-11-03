@@ -123,6 +123,8 @@ impl CPU {
         F: FnMut(&mut CPU),
     {
         loop {
+            callback(self);
+
             let code = self.mem_read(self.program_counter);
             self.program_counter += 1;
             let pc_state = self.program_counter;
@@ -301,8 +303,6 @@ impl CPU {
             if pc_state == self.program_counter {
                 self.program_counter += (opcode.len - 1) as u16;
             }
-
-            callback(self);
         }
     }
 
