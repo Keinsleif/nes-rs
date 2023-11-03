@@ -79,7 +79,7 @@ pub fn trace(cpu: &CPU) -> String {
             let address = cpu.mem_read_u16(begin + 1);
 
             match ops.mode {
-                AddressingMode::NoneAddressing => {
+                AddressingMode::NoneAddressing | AddressingMode::Indirect => {
                     if ops.code == 0x6c {
                         //jmp indirect
                         let jmp_addr = if address & 0x00FF == 0x00FF {
