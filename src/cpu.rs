@@ -724,7 +724,7 @@ impl CPU {
 
     fn txs(&mut self) {
         self.stack_pointer = self.reg_x;
-        self.update_zero_n_negative_flag(self.stack_pointer);
+        // self.update_zero_n_negative_flag(self.stack_pointer);
     }
 
     fn tya(&mut self) {
