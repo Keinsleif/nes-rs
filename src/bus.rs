@@ -60,7 +60,7 @@ impl Mem for Bus {
                 panic!("Attempt to write to Cartridge ROM space")
             }
             _ => {
-                println!("Ignoring mem access at {}", addr);
+                println!("Ignoring mem write-access at {}", addr);
             }
         }
     }
