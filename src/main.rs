@@ -11,6 +11,9 @@ use trace::trace;
 use rand::Rng;
 use sdl2::{pixels::{PixelFormatEnum, Color}, EventPump, event::Event, keyboard::Keycode};
 
+#[macro_use]
+extern crate bitflags;
+
 fn handle_user_input(cpu: &mut CPU, event_pump: &mut EventPump) {
     for event in event_pump.poll_iter() {
         match event {
