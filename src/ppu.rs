@@ -1,8 +1,8 @@
-use crate::cartridge::Mirroring;
-
-use self::registers::AddrRegister;
-
 mod registers;
+
+use crate::cartridge::Mirroring;
+use self::registers::{AddrRegister, ControlRegister};
+
 
 pub struct NesPPU {
     pub chr_rom: Vec<u8>,
@@ -22,7 +22,7 @@ impl NesPPU {
             vram: [0; 2048],
             oam_data: [0; 64 * 4],
             palette_table: [0; 32],
-            addr: AddrRegister::new()
+            addr: AddrRegister::new(),
         }
     }
     fn write_to_ppu_addr(&mut self, value: u8) {
