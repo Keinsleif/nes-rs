@@ -18,7 +18,6 @@ pub enum AddressingMode {
 }
 
 bitflags!{
-    #[derive(Clone)]
     pub struct CpuFlags: u8 {
         const CARRY             = 0b00000001;
         const ZERO              = 0b00000010;
