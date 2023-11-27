@@ -1,4 +1,3 @@
-
 bitflags! {
 
     // 7  bit  0
@@ -27,23 +26,22 @@ bitflags! {
         const MASTER_SLAVE_SELECT     = 0b01000000;
         const GENERATE_NMI            = 0b10000000;
     }
- }
- 
- impl ControlRegister {
-     pub fn new() -> Self {
-         ControlRegister::from_bits_truncate(0b00000000)
-     }
- 
-     pub fn vram_addr_increment(&self) -> u8 {
-         if !self.contains(ControlRegister::VRAM_ADD_INCREMENT) {
-             1
-         } else {
-             32
-         }
-     }
- 
-     pub fn update(&mut self, data: u8) {
-         self.bits = data;
-     }
- }
- 
+}
+
+impl ControlRegister {
+    pub fn new() -> Self {
+        ControlRegister::from_bits_truncate(0b00000000)
+    }
+
+    pub fn vram_addr_increment(&self) -> u8 {
+        if !self.contains(ControlRegister::VRAM_ADD_INCREMENT) {
+            1
+        } else {
+            32
+        }
+    }
+
+    pub fn update(&mut self, data: u8) {
+        self.bits = data;
+    }
+}
