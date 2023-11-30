@@ -1,6 +1,5 @@
 
 #![allow(unused_variables)]
-fn main() {
 pub struct Frame {
    pub data: Vec<u8>,
 }
@@ -23,5 +22,4 @@ impl Frame {
            self.data[base + 2] = rgb.2;
        }
    }
-}
 }
