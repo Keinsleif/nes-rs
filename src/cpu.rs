@@ -41,10 +41,10 @@ pub struct CPU {
 }
 
 pub trait Mem {
-    fn mem_read(&self, addr: u16) -> u8;
+    fn mem_read(&mut self, addr: u16) -> u8;
     fn mem_write(&mut self, addr: u16, data: u8);
 
-    fn mem_read_u16(&self, pos: u16) -> u16 {
+    fn mem_read_u16(&mut self, pos: u16) -> u16 {
         let low = self.mem_read(pos) as u16;
         let high = self.mem_read(pos + 1) as u16;
         (high << 8) | low
