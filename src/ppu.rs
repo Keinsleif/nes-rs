@@ -1,20 +1,23 @@
 mod registers;
 
 use crate::cartridge::Mirroring;
-use self::registers::{AddrRegister, ControlRegister};
+use self::registers::{AddrRegister, ControlRegister, MaskRegister, StatusRegister, ScrollRegister};
 
 
 pub struct NesPPU {
     pub chr_rom: Vec<u8>,
-    pub palette_table: [u8; 32],
-    pub vram: [u8; 2048],
-    pub oam_addr: u8,
-    pub oam_data: [u8; 256],
-
     pub mirroring: Mirroring,
-    addr: registers::AddrRegister,
+    pub palette_table: [u8; 32],
 
     pub ctrl: ControlRegister,
+    pub mask: MaskRegister,
+    pub status: StatusRegister,
+    pub oam_addr: u8,
+    pub oam_data: [u8; 256],
+    pub scroll: ScrollRegister,
+    pub addr: AddrRegister,
+    pub vram: [u8; 2048],
+
     internal_data_buf: u8,
 }
 
@@ -23,12 +26,15 @@ impl NesPPU {
         NesPPU {
             chr_rom,
             mirroring,
-            vram: [0; 2048],
+            palette_table: [0; 32],
+            ctrl: ControlRegister::new(),
+            mask: MaskRegister::new(),
+            status: StatusRegister::new(),
             oam_addr: 0,
             oam_data: [0; 64 * 4],
-            palette_table: [0; 32],
+            scroll: ScrollRegister::new(),
             addr: AddrRegister::new(),
-            ctrl: ControlRegister::new(),
+            vram: [0; 2048],
             internal_data_buf: 0,
         }
     }
