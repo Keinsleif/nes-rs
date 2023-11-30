@@ -1,4 +1,5 @@
 use crate::bus::Bus;
+use crate::interrupt;
 use crate::opcodes::OPCODE_MAP;
 
 #[derive(Debug)]
@@ -127,6 +128,19 @@ impl CPU {
         self.mem_write_u16(0xFFFC, 0x0600);
     }
 
+    fn interrupt(&mut self, interrupt: interrupt::Interrupt) {
+        self.stack_push_u16(self.program_counter);
+        let mut flag = self.status.clone();
+        flag.set(CpuFlags::BREAK, interrupt.b_flag_mask & 0b010000 == 1);
+        flag.set(CpuFlags::BREAK2, interrupt.b_flag_mask & 0b100000 == 1);
+
+        self.stack_push(flag.bits);
+        self.status.insert(CpuFlags::INTERRUPT_DISABLE);
+
+        self.bus.tick(interrupt.cpu_cycles);
+        self.program_counter = self.mem_read_u16(interrupt.vector_addr);
+    }
+
     pub fn run(&mut self) {
         self.run_with_callback(|_| {});
     }
@@ -136,6 +150,10 @@ impl CPU {
         F: FnMut(&mut CPU),
     {
         loop {
+            if let Some(_nmi) = self.bus.poll_nmi_interrupt() {
+                self.interrupt(interrupt::NMI)
+            }
+
             callback(self);
 
             let code = self.mem_read(self.program_counter);
