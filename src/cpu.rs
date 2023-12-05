@@ -31,14 +31,14 @@ bitflags!{
     }
 }
 
-pub struct CPU {
+pub struct CPU<'a> {
     pub reg_a: u8,
     pub reg_x: u8,
     pub reg_y: u8,
     pub stack_pointer: u8,
     pub status: CpuFlags,
     pub program_counter: u16,
-    pub bus: Bus,
+    pub bus: Bus<'a>,
 }
 
 pub trait Mem {
@@ -59,7 +59,7 @@ pub trait Mem {
     }
 }
 
-impl Mem for CPU {
+impl Mem for CPU<'_> {
     fn mem_read(&mut self, addr: u16) -> u8 {
         self.bus.mem_read(addr)
     }
@@ -67,10 +67,18 @@ impl Mem for CPU {
     fn mem_write(&mut self, addr: u16, data: u8) {
         self.bus.mem_write(addr, data)
     }
+
+    fn mem_read_u16(&mut self, pos: u16) -> u16 {
+        self.bus.mem_read_u16(pos)
+    }
+
+    fn mem_write_u16(&mut self, pos: u16, data: u16) {
+        self.bus.mem_write_u16(pos, data)
+    }
 }
 
-impl CPU {
-    pub fn new(bus: Bus) -> Self {
+impl<'a> CPU<'a> {
+    pub fn new<'b>(bus: Bus<'b>) -> CPU<'b> {
         CPU {
             reg_a: 0,
             reg_x: 0,
