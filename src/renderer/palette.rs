@@ -1,3 +1,5 @@
+use crate::ppu::NesPPU;
+
 #[rustfmt::skip]
 pub static SYSTEM_PALLETE: [(u8,u8,u8); 64] = [
    (0x80, 0x80, 0x80), (0x00, 0x3D, 0xA6), (0x00, 0x12, 0xB0), (0x44, 0x00, 0x96), (0xA1, 0x00, 0x5E),
@@ -14,3 +16,20 @@ pub static SYSTEM_PALLETE: [(u8,u8,u8); 64] = [
    (0xFF, 0xEF, 0xA6), (0xFF, 0xF7, 0x9C), (0xD7, 0xE8, 0x95), (0xA6, 0xED, 0xAF), (0xA2, 0xF2, 0xDA),
    (0x99, 0xFF, 0xFC), (0xDD, 0xDD, 0xDD), (0x11, 0x11, 0x11), (0x11, 0x11, 0x11)
 ];
+
+pub fn bg_pallette(ppu: &NesPPU, tile_column: usize, tile_row : usize) -> [u8;4] {
+   let attr_table_idx = tile_row / 4 * 8 +  tile_column / 4;
+   let attr_byte = ppu.vram[0x3c0 + attr_table_idx];  // note: still using hardcoded first nametable
+
+   let pallet_idx = match (tile_column %4 / 2, tile_row % 4 / 2) {
+       (0,0) => attr_byte & 0b11,
+       (1,0) => (attr_byte >> 2) & 0b11,
+       (0,1) => (attr_byte >> 4) & 0b11,
+       (1,1) => (attr_byte >> 6) & 0b11,
+       (_,_) => panic!("should not happen"),
+   };
+
+   let pallete_start: usize = 1 + (pallet_idx as usize)*4;
+   [ppu.palette_table[0], ppu.palette_table[pallete_start], ppu.palette_table[pallete_start+1], ppu.palette_table[pallete_start+2]]
+}
+
