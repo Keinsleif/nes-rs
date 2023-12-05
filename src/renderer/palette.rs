@@ -33,3 +33,12 @@ pub fn bg_pallette(ppu: &NesPPU, tile_column: usize, tile_row : usize) -> [u8;4]
    [ppu.palette_table[0], ppu.palette_table[pallete_start], ppu.palette_table[pallete_start+1], ppu.palette_table[pallete_start+2]]
 }
 
+pub fn sprite_palette(ppu: &NesPPU, pallete_idx: u8) -> [u8; 4] {
+   let start = 0x11 + (pallete_idx * 4) as usize;
+   [
+       0,
+       ppu.palette_table[start],
+       ppu.palette_table[start + 1],
+       ppu.palette_table[start + 2],
+   ]
+}
