@@ -8,6 +8,7 @@ pub mod interrupt;
 pub mod renderer;
 pub mod joypad;
 
+use std::collections::HashMap;
 
 use bus::Bus;
 use cartridge::Rom;
@@ -96,6 +97,16 @@ fn main() {
     let rom = Rom::new(&bytes).unwrap();
 
     let mut frame = Frame::new(); 
+
+    let mut key_map = HashMap::new();
+    key_map.insert(Keycode::Down, joypad::JoypadButton::DOWN);
+    key_map.insert(Keycode::Up, joypad::JoypadButton::UP);
+    key_map.insert(Keycode::Left, joypad::JoypadButton::LEFT);
+    key_map.insert(Keycode::Right, joypad::JoypadButton::RIGHT);
+    key_map.insert(Keycode::LCtrl, joypad::JoypadButton::SELECT);
+    key_map.insert(Keycode::LShift, joypad::JoypadButton::START);
+    key_map.insert(Keycode::Z, joypad::JoypadButton::BUTTON_A);
+    key_map.insert(Keycode::X, joypad::JoypadButton::BUTTON_B);
 
     let bus = Bus::new(rom, move |ppu: &NesPPU| {
         renderer::render(ppu, &mut frame);
