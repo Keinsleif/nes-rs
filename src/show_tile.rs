@@ -1,4 +1,3 @@
-pub mod bus;
 pub mod cartridge;
 pub mod cpu;
 pub mod opcodes;
@@ -7,20 +6,14 @@ pub mod ppu;
 pub mod interrupt;
 pub mod renderer;
 
-use bus::Bus;
 use cartridge::Rom;
-use cpu::Mem;
-use cpu::CPU;
-use trace::trace;
 use renderer::frame::Frame;
 use renderer::palette;
 // use rand::Rng;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
 use sdl2::pixels::PixelFormatEnum;
-use sdl2::EventPump;
 // use std::time::Duration;
 
 #[macro_use]
