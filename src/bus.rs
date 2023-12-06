@@ -74,6 +74,22 @@ impl Mem for Bus<'_> {
                 let mirror_down_addr = addr & 0b00100000_00000111;
                 self.mem_read(mirror_down_addr)
             }
+
+            0x4000..=0x4015 => {
+                //ignore APU 
+                0
+            }
+
+            0x4016 => {
+                // ignore joypad 1;
+                0
+            }
+
+            0x4017 => {
+                // ignore joypad 2
+                0
+            }
+
             0x8000 ..= 0xFFFF => self.read_prg_rom(addr),
             _ => {
                 println!("Ignoring mem access at 0x{:<04x}", addr);
@@ -109,6 +125,18 @@ impl Mem for Bus<'_> {
             }
             0x2007 => {
                 self.ppu.write_to_data(data);
+            }
+
+            0x4000..=0x4013 | 0x4015 => {
+                //ignore APU 
+            }
+
+            0x4016 => {
+                // ignore joypad 1;
+            }
+
+            0x4017 => {
+                // ignore joypad 2
             }
 
             // https://wiki.nesdev.com/w/index.php/PPU_programmer_reference#OAM_DMA_.28.244014.29_.3E_write
