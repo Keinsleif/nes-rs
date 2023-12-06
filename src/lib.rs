@@ -6,6 +6,7 @@ pub mod trace;
 pub mod ppu;
 pub mod interrupt;
 pub mod renderer;
+pub mod joypad;
 
 #[macro_use]
 extern crate bitflags;
