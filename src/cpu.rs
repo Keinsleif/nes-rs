@@ -158,7 +158,7 @@ impl<'a> CPU<'a> {
         F: FnMut(&mut CPU),
     {
         loop {
-            if let Some(_nmi) = self.bus.poll_nmi_interrupt() {
+            if let Some(_nmi) = self.bus.poll_nmi_status() {
                 self.interrupt(interrupt::NMI)
             }
 

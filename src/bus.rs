@@ -54,7 +54,7 @@ impl<'a> Bus<'a> {
         }
     }
 
-    pub fn poll_nmi_interrupt(&mut self) -> Option<u8> {
+    pub fn poll_nmi_status(&mut self) -> Option<u8> {
         self.ppu.poll_nmi_interrupt()
     }
 }
