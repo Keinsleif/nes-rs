@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use bus::Bus;
 use cartridge::Rom;
 use cpu::{CPU, Mem};
+use joypad::Joypad;
 use ppu::NesPPU;
 use renderer::frame::Frame;
 use trace::trace;
@@ -108,7 +109,7 @@ fn main() {
     key_map.insert(Keycode::Z, joypad::JoypadButton::BUTTON_A);
     key_map.insert(Keycode::X, joypad::JoypadButton::BUTTON_B);
 
-    let bus = Bus::new(rom, move |ppu: &NesPPU| {
+    let bus = Bus::new(rom, move |ppu: &NesPPU, joypad: &mut Joypad| {
         renderer::render(ppu, &mut frame);
         texture.update(None, &frame.data, 256 * 3).unwrap();
 
@@ -117,12 +118,22 @@ fn main() {
         canvas.present();
         for event in event_pump.poll_iter() {
             match event {
-              Event::Quit { .. }
-              | Event::KeyDown {
-                  keycode: Some(Keycode::Escape),
-                  ..
-              } => std::process::exit(0),
-              _ => { /* do nothing */ }
+                Event::Quit { .. }
+                | Event::KeyDown {
+                    keycode: Some(Keycode::Escape),
+                    ..
+                } => std::process::exit(0),
+                Event::KeyDown { keycode, .. } => {
+                    if let Some(key) = key_map.get(&keycode.unwrap_or(Keycode::Ampersand)) {
+                      joypad.set_button_pressed_status(*key, true);
+                    }
+                }
+                Event::KeyUp { keycode, .. } => {
+                    if let Some(key) = key_map.get(&keycode.unwrap_or(Keycode::Ampersand)) {
+                        joypad.set_button_pressed_status(*key, false);
+                    }
+                }
+                _ => { /* do nothing */ }
             }
          }
     });
