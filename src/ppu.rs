@@ -29,7 +29,7 @@ pub struct NesPPU {
 pub trait PPU {
     fn write_to_ctrl(&mut self, value: u8);
     fn write_to_mask(&mut self, value: u8);
-    fn read_status(&mut self) -> u8; 
+    fn read_status(&mut self) -> u8;
     fn write_to_oam_addr(&mut self, value: u8);
     fn write_to_oam_data(&mut self, value: u8);
     fn read_oam_data(&self) -> u8;
@@ -117,7 +117,6 @@ impl NesPPU {
 }
 
 impl PPU for NesPPU {
-
     fn write_to_ctrl(&mut self, value: u8) {
         let before_nmi_status = self.ctrl.generate_vblank_nmi();
         self.ctrl.update(value);
@@ -166,14 +165,16 @@ impl PPU for NesPPU {
             0x2000..=0x2fff => {
                 self.vram[self.mirror_vram_addr(addr) as usize] = value;
             }
-            0x3000..=0x3eff => unimplemented!("addr {} shouldn't be used in reallity", addr),
+            0x3000..=0x3eff => {
+                let addr_mirror = addr - 0x1000;
+                self.vram[self.mirror_vram_addr(addr_mirror) as usize] = value;
+            }
             0x3f10 | 0x3f14 | 0x3f18 | 0x3f1c => {
                 let add_mirror = addr - 0x10;
-                self.palette_table[(add_mirror - 0x3f00) as usize] = value;
+                self.palette_table[((add_mirror - 0x3f00) as usize)%32] = value;
             }
-            0x3f00..=0x3fff =>
-            {
-                self.palette_table[(addr - 0x3f00) as usize] = value;
+            0x3f00..=0x3fff => {
+                self.palette_table[((addr - 0x3f00) as usize)%32] = value;
             }
             _ => panic!("unexpected access to mirrored space {}", addr),
         }
@@ -195,11 +196,25 @@ impl PPU for NesPPU {
                 self.internal_data_buf = self.vram[self.mirror_vram_addr(addr) as usize];
                 result
             }
-            0x3000..=0x3eff => panic!(
-                "addr space 0x3000..0x3eff is not expected to be used, requested = {} ",
-                addr
-            ),
-            0x3f00..=0x3fff => self.palette_table[(addr - 0x3f00) as usize],
+
+            0x3000..=0x3eff => {
+                let addr_mirror = addr - 0x1000;
+                let result = self.internal_data_buf;
+                self.internal_data_buf = self.vram[self.mirror_vram_addr(addr_mirror) as usize];
+                result
+                // panic(
+                // "addr space 0x3000..0x3eff is not expected to be used, requested = {} ",
+                // addr
+                // )
+            }
+
+            //Addresses $3F10/$3F14/$3F18/$3F1C are mirrors of $3F00/$3F04/$3F08/$3F0C
+            0x3f10 | 0x3f14 | 0x3f18 | 0x3f1c => {
+                let add_mirror = addr - 0x10;
+                self.palette_table[((add_mirror - 0x3f00) as usize)%32]
+            }
+
+            0x3f00..=0x3fff => self.palette_table[((addr - 0x3f00) as usize)%32],
             _ => panic!("unexpected access to mirrored space {}", addr),
         }
     }
