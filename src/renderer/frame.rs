@@ -1,5 +1,3 @@
-
-#![allow(unused_variables)]
 pub struct Frame {
    pub data: Vec<u8>,
 }
