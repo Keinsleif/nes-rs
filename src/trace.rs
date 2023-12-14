@@ -18,7 +18,7 @@ pub fn trace(cpu: &mut CPU) -> String {
         AddressingMode::Immediate | AddressingMode::NoneAddressing | AddressingMode::Indirect => (0, 0),
         _ => {
             let (addr, _) = cpu.get_absolute_address(&ops.mode, begin + 1);
-            (addr, cpu.mem_read(addr))
+            (addr, 0 /*cpu.mem_read(addr)*/)
         }
     };
 
