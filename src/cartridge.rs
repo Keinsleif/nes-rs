@@ -23,7 +23,7 @@ impl Rom {
             return Err("File is not iNES format".to_string())
         }
 
-        let mapper = (raw[6] & 0b1111_0000) | (raw[7] >> 4);
+        let mapper = (raw[7] & 0b1111_0000) | (raw[6] >> 4);
 
         let ines_ver = (raw[7] >> 2) & 0b0000_0011;
         if ines_ver != 0 {
