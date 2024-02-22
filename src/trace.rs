@@ -1,11 +1,17 @@
+use once_cell::sync::Lazy;
+
 use crate::cpu::AddressingMode;
 use crate::cpu::Mem;
 use crate::cpu::CPU;
 use crate::opcodes;
 use std::collections::HashMap;
 
+pub static NON_READABLE_ADDR: Lazy<Vec<u16>> = Lazy::new(|| vec!(0x2000, 0x2001, 0x2003, 0x2005, 0x2006, 0x4014));
+
 pub fn trace(cpu: &mut CPU) -> String {
     let ref opscodes: HashMap<u8, &'static opcodes::OpCode> = *opcodes::OPCODE_MAP;
+
+    let ref non_readable_addr = *NON_READABLE_ADDR;
 
     let code = cpu.mem_read(cpu.program_counter);
     let ops = opscodes.get(&code).unwrap();
@@ -15,10 +21,15 @@ pub fn trace(cpu: &mut CPU) -> String {
     hex_dump.push(code);
 
     let (mem_addr, stored_value) = match ops.mode {
-        AddressingMode::Immediate | AddressingMode::NoneAddressing | AddressingMode::Indirect => (0, 0),
+        AddressingMode::Immediate | AddressingMode::NoneAddressing => (0, 0),
         _ => {
             let (addr, _) = cpu.get_absolute_address(&ops.mode, begin + 1);
-            (addr, 0 /*cpu.mem_read(addr)*/)
+
+            if !non_readable_addr.contains(&addr) {
+                (addr, cpu.mem_read(addr))
+            } else {
+                (addr, 0)
+            }
         }
     };
 
@@ -79,7 +90,7 @@ pub fn trace(cpu: &mut CPU) -> String {
             let address = cpu.mem_read_u16(begin + 1);
 
             match ops.mode {
-                AddressingMode::NoneAddressing | AddressingMode::Indirect => {
+                AddressingMode::NoneAddressing => {
                     if ops.code == 0x6c {
                         //jmp indirect
                         let jmp_addr = if address & 0x00FF == 0x00FF {
@@ -129,4 +140,3 @@ pub fn trace(cpu: &mut CPU) -> String {
     )
     .to_ascii_uppercase()
 }
-
