@@ -15,10 +15,10 @@ struct Rect {
 impl Rect {
     fn new(x1: usize, y1: usize, x2: usize, y2: usize) -> Self {
         Rect {
-            x1: x1,
-            y1: y1,
-            x2: x2,
-            y2: y2,
+            x1,
+            y1,
+            x2,
+            y2,
         }
     }
 }
