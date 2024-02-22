@@ -7,6 +7,7 @@ pub mod ppu;
 pub mod interrupt;
 pub mod renderer;
 pub mod joypad;
+pub mod apu;
 
 use std::{collections::HashMap, env};
 
