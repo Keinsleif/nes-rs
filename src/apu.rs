@@ -1,5 +1,17 @@
+use self::registers::SquareRegister;
+
 mod registers;
 
-struct NesAPU {
-    
+pub struct NesAPU {
+    ch1: SquareRegister,
+    ch2: SquareRegister,
+}
+
+impl NesAPU {
+    pub fn new() -> Self {
+        NesAPU {
+            ch1: SquareRegister::new(),
+            ch2: SquareRegister::new(),
+        }
+    }
 }
