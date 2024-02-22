@@ -8,7 +8,7 @@ pub mod interrupt;
 pub mod renderer;
 pub mod joypad;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, env};
 
 use bus::Bus;
 use cartridge::Rom;
@@ -39,7 +39,9 @@ fn main() {
     let creator = canvas.texture_creator();
     let mut texture = creator.create_texture_target(PixelFormatEnum::RGB24, 256, 240).unwrap();
 
-    let bytes = std::fs::read("pacman.nes").unwrap();
+    let args: Vec<String> = env::args().collect();
+
+    let bytes = std::fs::read(&args[1]).unwrap();
     let rom = Rom::new(&bytes).unwrap();
 
     let mut frame = Frame::new(); 
