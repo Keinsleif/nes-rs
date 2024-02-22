@@ -168,7 +168,7 @@ impl<'a> CPU<'a> {
             self.program_counter += 1;
             let pc_state = self.program_counter;
 
-            let opcode = OPCODE_MAP.get(&code).unwrap();
+            let opcode = OPCODE_MAP.get(&code).expect(&format!("OpCode {:x} is not recognized", code));
 
             match opcode.name {
                 "ADC" => {
@@ -560,6 +560,9 @@ impl<'a> CPU<'a> {
                 }
                 _ => todo!(""),
             }
+
+            self.bus.tick(opcode.cycles);
+
             if pc_state == self.program_counter {
                 self.program_counter += (opcode.len - 1) as u16;
             }
