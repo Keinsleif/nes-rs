@@ -133,7 +133,15 @@ impl Mem for Bus<'_> {
                 self.ppu.write_to_data(data);
             }
 
-            0x4000..=0x4013 | 0x4015 => {
+            0x4000..=0x4003 => {
+                self.apu.write_square1(addr, data);
+            }
+
+            0x4004..=0x4007 => {
+                self.apu.write_square2(addr, data);
+            }
+
+            0x4008..=0x4013 | 0x4015 => {
                 //ignore APU 
             }
 
