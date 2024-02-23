@@ -6,6 +6,16 @@ pub struct SquareNote {
     pub duty: f32,
 }
 
+impl SquareNote {
+    pub fn new() -> Self {
+        SquareNote {
+            freq: 0.0,
+            volume: 0.0,
+            duty: 0.0,
+        }
+    }
+}
+
 pub struct SquareSound {
     sample_rate: f32,
     phase: f32,
@@ -14,13 +24,13 @@ pub struct SquareSound {
 }
 
 impl SquareSound {
-    pub fn new(sample_rate: f32, note: SquareNote) -> (Self, Sender<SquareNote>) {
+    pub fn new(sample_rate: f32) -> (Self, Sender<SquareNote>) {
         let (tx, rx) = channel::<SquareNote>();
         (
             SquareSound {
                 sample_rate,
                 phase: 0.0,
-                note,
+                note: SquareNote::new(),
                 rx,
             },
             tx,

@@ -6,6 +6,15 @@ pub struct NoiseNote {
     pub is_long: bool,
 }
 
+impl NoiseNote {
+    pub fn new() -> Self {
+        NoiseNote {
+            freq: 0.0,
+            volume: 0.0,
+            is_long: true,
+        }
+    }
+}
 
 pub struct NoiseRandom {
     is_long: bool,
@@ -60,7 +69,7 @@ pub struct NoiseSound {
 }
 
 impl NoiseSound {
-    pub fn new(sample_rate: f32, note: NoiseNote) -> (Self, Sender<NoiseNote>) {
+    pub fn new(sample_rate: f32) -> (Self, Sender<NoiseNote>) {
         let (tx, rx) = channel::<NoiseNote>();
         (
             NoiseSound {
@@ -69,7 +78,7 @@ impl NoiseSound {
                 is_on: false,
                 long_rnd: NoiseRandom::new(true),
                 short_rnd: NoiseRandom::new(false),
-                note,
+                note: NoiseNote::new(),
                 rx,
             },
             tx,
