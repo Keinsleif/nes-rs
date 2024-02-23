@@ -23,11 +23,11 @@ impl NesAPU {
     }
 
     pub fn write_square1(&mut self, addr: u16, data: u8) {
-        self.ch1.write(addr - 0x4000, data);
+        self.ch1.write(addr, data);
         self.tx.send(self.ch1.get_note()).unwrap();
     }
 
     pub fn write_square2(&mut self, addr: u16, data: u8) {
-        self.ch2.write(addr - 0x4004, data);
+        self.ch2.write(addr - 0x0004, data);
     }
 }
