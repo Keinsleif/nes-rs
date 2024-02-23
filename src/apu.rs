@@ -1,4 +1,5 @@
 mod registers;
+pub mod sounds;
 
 use registers::SquareRegister;
 
