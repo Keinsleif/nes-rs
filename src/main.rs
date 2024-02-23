@@ -9,14 +9,16 @@ pub mod renderer;
 pub mod joypad;
 pub mod apu;
 
-use std::{collections::HashMap, env};
+use std::{collections::HashMap, env, sync::mpsc::Sender, time::Duration};
 
 use bus::Bus;
 use cartridge::Rom;
+use cpal::{traits::{StreamTrait, DeviceTrait, HostTrait}, FromSample, SizedSample, Stream};
 use cpu::CPU;
 use joypad::Joypad;
 use ppu::NesPPU;
 use renderer::frame::Frame;
+use apu::sounds::{SquareSound, SquareNote};
 // use trace::trace;
 use sdl2::{pixels::PixelFormatEnum, event::Event, keyboard::Keycode};
 
@@ -35,6 +37,35 @@ fn main() {
     let mut canvas = window.into_canvas().present_vsync().build().unwrap();
     let mut event_pump = sdl_context.event_pump().unwrap();
     canvas.set_scale(3.0, 3.0).unwrap();
+
+    // init sound
+    let host = cpal::default_host();
+    let device = host
+        .default_output_device()
+        .expect("No output device available.");
+
+    let config = device.default_output_config().unwrap();
+
+    let (stream, tx) = match config.sample_format() {
+        cpal::SampleFormat::I8 => run::<i8>(&device, &config.into()),
+        cpal::SampleFormat::I16 => run::<i16>(&device, &config.into()),
+        // cpal::SampleFormat::I24 => run::<I24>(&device, &config.into()),
+        cpal::SampleFormat::I32 => run::<i32>(&device, &config.into()),
+        // cpal::SampleFormat::I48 => run::<I48>(&device, &config.into()),
+        cpal::SampleFormat::I64 => run::<i64>(&device, &config.into()),
+        cpal::SampleFormat::U8 => run::<u8>(&device, &config.into()),
+        cpal::SampleFormat::U16 => run::<u16>(&device, &config.into()),
+        // cpal::SampleFormat::U24 => run::<U24>(&device, &config.into()),
+        cpal::SampleFormat::U32 => run::<u32>(&device, &config.into()),
+        // cpal::SampleFormat::U48 => run::<U48>(&device, &config.into()),
+        cpal::SampleFormat::U64 => run::<u64>(&device, &config.into()),
+        cpal::SampleFormat::F32 => run::<f32>(&device, &config.into()),
+        cpal::SampleFormat::F64 => run::<f64>(&device, &config.into()),
+        sample_format => panic!("Unsupported sample format '{sample_format}'"),
+    };
+
+    stream.play().unwrap();
+
 
     // setup texture
     let creator = canvas.texture_creator();
@@ -84,7 +115,7 @@ fn main() {
                 _ => { /* do nothing */ }
             }
          }
-    });
+    }, tx);
     let mut cpu = CPU::new(bus);
     cpu.reset();
     cpu.run();
@@ -93,4 +124,51 @@ fn main() {
     // cpu.run_with_callback(|cpu| {
     //     println!("{}", trace::trace(cpu));
     // });
+}
+
+
+
+fn run<T>(device: &cpal::Device, config: &cpal::StreamConfig) -> (Stream, Sender<SquareNote>)
+where
+    T: SizedSample + FromSample<f32>,
+{
+    let sample_rate = config.sample_rate.0 as f32;
+    let channels = config.channels as usize;
+
+    // Produce a sinusoid of maximum amplitude.
+    let (mut sound, tx) = SquareSound::new(
+        sample_rate,
+        SquareNote {
+            freq: 0.0,
+            volume: 0.0,
+            duty: 0.0,
+        }
+    );
+    let mut next_value = move || {
+        let res = sound.rx.recv_timeout(Duration::ZERO);
+        match res {
+            Ok(note) => sound.note = note,
+            Err(_) => {}
+        }
+        sound.step()
+    };
+
+    let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
+
+    let stream = device
+        .build_output_stream(
+            config,
+            move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
+                for frame in data.chunks_mut(channels) {
+                    let value: T = T::from_sample(next_value());
+                    for sample in frame.iter_mut() {
+                        *sample = value;
+                    }
+                }
+            },
+            err_fn,
+            None,
+        )
+        .unwrap();
+    (stream, tx)
 }
