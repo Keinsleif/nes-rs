@@ -1,6 +1,7 @@
 use crate::cpu::Mem;
 use crate::cartridge::Rom;
 use crate::ppu::NesPPU;
+use crate::apu::NesAPU;
 use crate::ppu::PPU;
 use crate::joypad::Joypad;
 
@@ -12,6 +13,7 @@ pub struct Bus<'call> {
     cpu_vram: [u8; 2048],
     prg_rom: Vec<u8>,
     ppu: NesPPU,
+    apu: NesAPU,
 
     cycles: usize,
     gameloop_callback: Box<dyn FnMut(&NesPPU, &mut Joypad) + 'call>,
@@ -28,6 +30,7 @@ impl<'a> Bus<'a> {
             cpu_vram: [0; 2048],
             prg_rom: rom.prg_rom,
             ppu,
+            apu: NesAPU::new(),
             cycles: 0,
             gameloop_callback: Box::from(gameloop_callback),
             joypad1: Joypad::new(),
