@@ -2,6 +2,8 @@ use crate::bus::Bus;
 use crate::interrupt;
 use crate::opcodes::OPCODE_MAP;
 
+pub const CPU_FREQ: f32 = 1789773.0;
+
 #[derive(Debug)]
 #[allow(non_camel_case_types)]
 pub enum AddressingMode {

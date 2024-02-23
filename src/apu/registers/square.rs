@@ -1,6 +1,5 @@
 use crate::apu::sounds::SquareNote;
-
-const CPU_FREQ: f32 = 1789773.0;
+use crate::cpu::CPU_FREQ;
 
 pub struct SquareRegister {
     tone_volume: u8,
