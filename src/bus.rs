@@ -1,8 +1,11 @@
+use std::sync::mpsc::Sender;
+
 use crate::cpu::Mem;
 use crate::cartridge::Rom;
 use crate::ppu::NesPPU;
 use crate::apu::NesAPU;
 use crate::ppu::PPU;
+use crate::apu::sounds::SquareNote;
 use crate::joypad::Joypad;
 
 const RAM: u16 = 0x0000;
@@ -21,7 +24,7 @@ pub struct Bus<'call> {
 }
 
 impl<'a> Bus<'a> {
-    pub fn new<'call, F>(rom: Rom, gameloop_callback: F) -> Bus<'call>
+    pub fn new<'call, F>(rom: Rom, gameloop_callback: F, tx: Sender<SquareNote>) -> Bus<'call>
     where
         F: FnMut(&NesPPU, &mut Joypad) + 'call,
     {
@@ -30,7 +33,7 @@ impl<'a> Bus<'a> {
             cpu_vram: [0; 2048],
             prg_rom: rom.prg_rom,
             ppu,
-            apu: NesAPU::new(),
+            apu: NesAPU::new(tx),
             cycles: 0,
             gameloop_callback: Box::from(gameloop_callback),
             joypad1: Joypad::new(),
