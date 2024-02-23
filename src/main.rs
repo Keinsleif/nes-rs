@@ -18,7 +18,7 @@ use cpu::CPU;
 use joypad::Joypad;
 use ppu::NesPPU;
 use renderer::frame::Frame;
-use apu::sounds::{SquareSound, SquareNote};
+use apu::{sounds::{NoiseNote, NoiseSound, SquareSound, SquareNote}, NesAPU};
 // use trace::trace;
 use sdl2::{pixels::PixelFormatEnum, event::Event, keyboard::Keycode};
 
@@ -46,7 +46,7 @@ fn main() {
 
     let config = device.default_output_config().unwrap();
 
-    let (stream, tx) = match config.sample_format() {
+    let (stream, tx, noise_tx) = match config.sample_format() {
         cpal::SampleFormat::I8 => run::<i8>(&device, &config.into()),
         cpal::SampleFormat::I16 => run::<i16>(&device, &config.into()),
         // cpal::SampleFormat::I24 => run::<I24>(&device, &config.into()),
@@ -88,6 +88,8 @@ fn main() {
     key_map.insert(Keycode::Z, joypad::JoypadButton::BUTTON_A);
     key_map.insert(Keycode::X, joypad::JoypadButton::BUTTON_B);
 
+    let apu = NesAPU::new(tx,noise_tx);
+
     let bus = Bus::new(rom, move |ppu: &NesPPU, joypad: &mut Joypad| {
         renderer::render(ppu, &mut frame);
         texture.update(None, &frame.data, 256 * 3).unwrap();
@@ -115,7 +117,7 @@ fn main() {
                 _ => { /* do nothing */ }
             }
          }
-    }, tx);
+    }, apu);
     let mut cpu = CPU::new(bus);
     cpu.reset();
     cpu.run();
@@ -128,7 +130,7 @@ fn main() {
 
 
 
-fn run<T>(device: &cpal::Device, config: &cpal::StreamConfig) -> (Stream, Sender<SquareNote>)
+fn run<T>(device: &cpal::Device, config: &cpal::StreamConfig) -> (Stream, Sender<SquareNote>, Sender<NoiseNote>)
 where
     T: SizedSample + FromSample<f32>,
 {
@@ -144,13 +146,25 @@ where
             duty: 0.0,
         }
     );
+    let (mut noise_sound, noise_tx) = NoiseSound::new(
+        sample_rate,
+        NoiseNote {
+            freq: 0.0,
+            volume: 0.0,
+            is_long: true,
+        }
+    );
     let mut next_value = move || {
         let res = sound.rx.recv_timeout(Duration::ZERO);
-        match res {
-            Ok(note) => sound.note = note,
-            Err(_) => {}
+        let noise_res = noise_sound.rx.recv_timeout(Duration::ZERO);
+        let mut value: f32 = 0.0;
+        match (res, noise_res) {
+            (Ok(note), _) => sound.note = note,
+            (_, Ok(noise_note)) => noise_sound.note = noise_note,
+            _ => {}
         }
-        sound.step()
+        value += sound.step();
+        value
     };
 
     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
@@ -160,7 +174,7 @@ where
             config,
             move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
                 for frame in data.chunks_mut(channels) {
-                    let value: T = T::from_sample(next_value());
+                    let value: T = T::from_sample(next_value() * 0.1);
                     for sample in frame.iter_mut() {
                         *sample = value;
                     }
@@ -170,5 +184,5 @@ where
             None,
         )
         .unwrap();
-    (stream, tx)
+    (stream, tx, noise_tx)
 }
