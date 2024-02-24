@@ -30,7 +30,7 @@ impl<'a> Bus<'a> {
             cpu_vram: [0; 2048],
             prg_rom: rom.prg_rom,
             ppu,
-            apu: apu,
+            apu,
             cycles: 0,
             gameloop_callback: Box::from(gameloop_callback),
             joypad1: Joypad::new(),

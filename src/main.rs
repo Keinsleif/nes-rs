@@ -1,26 +1,32 @@
-pub mod cpu;
-pub mod bus;
-pub mod opcodes;
-pub mod cartridge;
-pub mod trace;
-pub mod ppu;
-pub mod interrupt;
-pub mod renderer;
-pub mod joypad;
 pub mod apu;
+pub mod bus;
+pub mod cartridge;
+pub mod cpu;
+pub mod interrupt;
+pub mod joypad;
+pub mod opcodes;
+pub mod ppu;
+pub mod renderer;
+pub mod trace;
 
-use std::{collections::HashMap, env, sync::mpsc::Sender, time::Duration};
+use std::{collections::HashMap, env};
 
+use apu::{
+    sounds::{SoundManager, Transmitters},
+    NesAPU,
+};
 use bus::Bus;
 use cartridge::Rom;
-use cpal::{traits::{StreamTrait, DeviceTrait, HostTrait}, FromSample, SizedSample, Stream};
+use cpal::{
+    traits::{DeviceTrait, HostTrait, StreamTrait},
+    FromSample, SizedSample, Stream,
+};
 use cpu::CPU;
 use joypad::Joypad;
 use ppu::NesPPU;
 use renderer::frame::Frame;
-use apu::{sounds::{NoiseNote, NoiseSound, SquareSound, SquareNote}, NesAPU};
 // use trace::trace;
-use sdl2::{pixels::PixelFormatEnum, event::Event, keyboard::Keycode};
+use sdl2::{event::Event, keyboard::Keycode, pixels::PixelFormatEnum};
 
 #[macro_use]
 extern crate bitflags;
@@ -30,9 +36,10 @@ fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsys = sdl_context.video().unwrap();
     let window = video_subsys
-    .window("NES Emulator", (256.0 * 3.0) as u32 , (240.0 * 3.0) as u32)
-    .position_centered()
-    .build().unwrap();
+        .window("NES Emulator", (256.0 * 3.0) as u32, (240.0 * 3.0) as u32)
+        .position_centered()
+        .build()
+        .unwrap();
 
     let mut canvas = window.into_canvas().present_vsync().build().unwrap();
     let mut event_pump = sdl_context.event_pump().unwrap();
@@ -46,7 +53,7 @@ fn main() {
 
     let config = device.default_output_config().unwrap();
 
-    let (stream, tx, noise_tx) = match config.sample_format() {
+    let (stream, txs) = match config.sample_format() {
         cpal::SampleFormat::I8 => run::<i8>(&device, &config.into()),
         cpal::SampleFormat::I16 => run::<i16>(&device, &config.into()),
         // cpal::SampleFormat::I24 => run::<I24>(&device, &config.into()),
@@ -66,17 +73,18 @@ fn main() {
 
     stream.play().unwrap();
 
-
     // setup texture
     let creator = canvas.texture_creator();
-    let mut texture = creator.create_texture_target(PixelFormatEnum::RGB24, 256, 240).unwrap();
+    let mut texture = creator
+        .create_texture_target(PixelFormatEnum::RGB24, 256, 240)
+        .unwrap();
 
     let args: Vec<String> = env::args().collect();
 
     let bytes = std::fs::read(&args[1]).unwrap();
     let rom = Rom::new(&bytes).unwrap();
 
-    let mut frame = Frame::new(); 
+    let mut frame = Frame::new();
 
     let mut key_map = HashMap::new();
     key_map.insert(Keycode::Down, joypad::JoypadButton::DOWN);
@@ -88,36 +96,40 @@ fn main() {
     key_map.insert(Keycode::Z, joypad::JoypadButton::BUTTON_A);
     key_map.insert(Keycode::X, joypad::JoypadButton::BUTTON_B);
 
-    let apu = NesAPU::new(tx,noise_tx);
+    let apu = NesAPU::new(txs);
 
-    let bus = Bus::new(rom, move |ppu: &NesPPU, joypad: &mut Joypad| {
-        renderer::render(ppu, &mut frame);
-        texture.update(None, &frame.data, 256 * 3).unwrap();
+    let bus = Bus::new(
+        rom,
+        move |ppu: &NesPPU, joypad: &mut Joypad| {
+            renderer::render(ppu, &mut frame);
+            texture.update(None, &frame.data, 256 * 3).unwrap();
 
-        canvas.copy(&texture, None, None).unwrap();
- 
-        canvas.present();
-        for event in event_pump.poll_iter() {
-            match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Some(Keycode::Escape),
-                    ..
-                } => std::process::exit(0),
-                Event::KeyDown { keycode, .. } => {
-                    if let Some(key) = key_map.get(&keycode.unwrap_or(Keycode::Ampersand)) {
-                      joypad.set_button_pressed_status(*key, true);
+            canvas.copy(&texture, None, None).unwrap();
+
+            canvas.present();
+            for event in event_pump.poll_iter() {
+                match event {
+                    Event::Quit { .. }
+                    | Event::KeyDown {
+                        keycode: Some(Keycode::Escape),
+                        ..
+                    } => std::process::exit(0),
+                    Event::KeyDown { keycode, .. } => {
+                        if let Some(key) = key_map.get(&keycode.unwrap_or(Keycode::Ampersand)) {
+                            joypad.set_button_pressed_status(*key, true);
+                        }
                     }
-                }
-                Event::KeyUp { keycode, .. } => {
-                    if let Some(key) = key_map.get(&keycode.unwrap_or(Keycode::Ampersand)) {
-                        joypad.set_button_pressed_status(*key, false);
+                    Event::KeyUp { keycode, .. } => {
+                        if let Some(key) = key_map.get(&keycode.unwrap_or(Keycode::Ampersand)) {
+                            joypad.set_button_pressed_status(*key, false);
+                        }
                     }
+                    _ => { /* do nothing */ }
                 }
-                _ => { /* do nothing */ }
             }
-         }
-    }, apu);
+        },
+        apu,
+    );
     let mut cpu = CPU::new(bus);
     cpu.reset();
     cpu.run();
@@ -128,9 +140,7 @@ fn main() {
     // });
 }
 
-
-
-fn run<T>(device: &cpal::Device, config: &cpal::StreamConfig) -> (Stream, Sender<SquareNote>, Sender<NoiseNote>)
+fn run<T>(device: &cpal::Device, config: &cpal::StreamConfig) -> (Stream, Transmitters)
 where
     T: SizedSample + FromSample<f32>,
 {
@@ -138,34 +148,8 @@ where
     let channels = config.channels as usize;
 
     // Produce a sinusoid of maximum amplitude.
-    let (mut sound, tx) = SquareSound::new(
-        sample_rate,
-        SquareNote {
-            freq: 0.0,
-            volume: 0.0,
-            duty: 0.0,
-        }
-    );
-    let (mut noise_sound, noise_tx) = NoiseSound::new(
-        sample_rate,
-        NoiseNote {
-            freq: 0.0,
-            volume: 0.0,
-            is_long: true,
-        }
-    );
-    let mut next_value = move || {
-        let res = sound.rx.recv_timeout(Duration::ZERO);
-        let noise_res = noise_sound.rx.recv_timeout(Duration::ZERO);
-        let mut value: f32 = 0.0;
-        match (res, noise_res) {
-            (Ok(note), _) => sound.note = note,
-            (_, Ok(noise_note)) => noise_sound.note = noise_note,
-            _ => {}
-        }
-        value += sound.step();
-        value
-    };
+    let (mut sound_manager, txs) = SoundManager::new(sample_rate);
+    let mut next_value = move || sound_manager.get_sound();
 
     let err_fn = |err| eprintln!("an error occurred on stream: {}", err);
 
@@ -184,5 +168,5 @@ where
             None,
         )
         .unwrap();
-    (stream, tx, noise_tx)
+    (stream, txs)
 }
