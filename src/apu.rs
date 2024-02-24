@@ -1,45 +1,39 @@
 mod registers;
 pub mod sounds;
 
-use std::sync::mpsc::Sender;
-
 use registers::SquareRegister;
 use registers::NoiseRegister;
-
-use sounds::SquareNote;
-
-use self::sounds::NoiseNote;
+use self::sounds::Transmitters;
 
 pub struct NesAPU {
-    ch1: SquareRegister,
-    ch2: SquareRegister,
-    ch4: NoiseRegister,
-    tx: Sender<SquareNote>,
-    noise_tx: Sender<NoiseNote>
+    square1: SquareRegister,
+    square2: SquareRegister,
+    noise: NoiseRegister,
+    txs: Transmitters,
 }
 
 impl NesAPU {
-    pub fn new(tx: Sender<SquareNote>, noise_tx: Sender<NoiseNote>) -> Self {
+    pub fn new(txs: Transmitters) -> Self {
         NesAPU {
-            ch1: SquareRegister::new(),
-            ch2: SquareRegister::new(),
-            ch4: NoiseRegister::new(),
-            tx,
-            noise_tx,
+            square1: SquareRegister::new(),
+            square2: SquareRegister::new(),
+            noise: NoiseRegister::new(),
+            txs
         }
     }
 
     pub fn write_square1(&mut self, addr: u16, data: u8) {
-        self.ch1.write(addr, data);
-        self.tx.send(self.ch1.get_note()).unwrap();
+        self.square1.write(addr, data);
+        self.txs.square1.send(self.square1.get_note()).unwrap();
     }
 
     pub fn write_square2(&mut self, addr: u16, data: u8) {
-        self.ch2.write(addr - 0x0004, data);
+        self.square2.write(addr - 0x0004, data);
+        self.txs.square2.send(self.square2.get_note()).unwrap();
     }
 
     pub fn write_noise(&mut self, addr: u16, data: u8) {
-        self.ch4.write(addr, data);
-        self.noise_tx.send(self.ch4.get_note()).unwrap();
+        self.noise.write(addr, data);
+        self.txs.noise.send(self.noise.get_note()).unwrap();
     }
 }
