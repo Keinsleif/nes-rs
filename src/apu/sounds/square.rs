@@ -1,4 +1,4 @@
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::{sync::mpsc::{channel, Receiver, Sender}, time::Duration};
 
 pub struct SquareNote {
     pub freq: f32,
@@ -38,6 +38,11 @@ impl SquareSound {
     }
 
     pub fn step(&mut self) -> f32{
+        let res = self.rx.recv_timeout(Duration::ZERO);
+        match res {
+            Ok(note) => self.note = note,
+            _ => {}
+        }
         let output = if self.phase <= self.note.duty {
             self.note.volume
         } else {

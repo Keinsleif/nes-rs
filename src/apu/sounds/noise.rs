@@ -1,4 +1,4 @@
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::{sync::mpsc::{channel, Receiver, Sender}, time::Duration};
 
 pub struct NoiseNote {
     pub freq: f32,
@@ -19,7 +19,6 @@ impl NoiseNote {
 pub struct NoiseRandom {
     is_long: bool,
     rand_reg: u16,
-    cycle_counter: u16,
 }
 
 impl NoiseRandom {
@@ -27,34 +26,18 @@ impl NoiseRandom {
         NoiseRandom {
             is_long,
             rand_reg: 0x01,
-            cycle_counter: 0x00,
         }
     }
 
     pub fn next(&mut self) -> bool {
-        let cycle = self.get_cycle();
-        if self.cycle_counter >= cycle {
-            self.rand_reg = 1;
-            self.cycle_counter = 0;
-        }
-        self.cycle_counter+=1;
-
         let bit = if self.is_long {
             (self.rand_reg & 0x0001) ^ ((self.rand_reg >> 1) & 0x0001)
         } else {
             (self.rand_reg & 0x0001) ^ ((self.rand_reg >> 6) & 0x0001)
         };
         self.rand_reg >>= 1;
-        self.rand_reg = (self.rand_reg & 0x2FFF) | bit << 14;
-        self.rand_reg & 0x0001 == 0
-    }
-
-    fn get_cycle(&self) -> u16 {
-        if self.is_long {
-            32767
-        } else {
-            93
-        }
+        self.rand_reg = (self.rand_reg & 0b11_1111_1111_1111) | bit << 14;
+        self.rand_reg & 0x0001 != 0
     }
 }
 
@@ -86,6 +69,11 @@ impl NoiseSound {
     }
 
     pub fn step(&mut self) -> f32 {
+        let res = self.rx.recv_timeout(Duration::ZERO);
+        match res {
+            Ok(note) => self.note = note,
+            _ => {}
+        }
         let mut output = 0.0;
         if self.is_on {
             output = self.note.volume;
