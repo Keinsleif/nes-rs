@@ -1,16 +1,16 @@
-use crate::apu::sounds::SquareNote;
+use crate::apu::sounds::PulseNote;
 use crate::cpu::CPU_FREQ;
 
-pub struct SquareRegister {
+pub struct PulseRegister {
     tone_volume: u8,
     sweep: u8,
     freq_lower: u8,
     freq_high_keyon: u8,
 }
 
-impl SquareRegister {
+impl PulseRegister {
     pub fn new() -> Self {
-        SquareRegister {
+        PulseRegister {
             tone_volume: 0x00,
             sweep: 0x00,
             freq_lower: 0x00,
@@ -18,8 +18,8 @@ impl SquareRegister {
         }
     }
 
-    pub fn get_note(&self) -> SquareNote {
-        SquareNote {
+    pub fn get_note(&self) -> PulseNote {
+        PulseNote {
             freq: self.get_freq(),
             volume: self.get_volume(),
             duty: self.get_duty(),

@@ -1,5 +1,5 @@
-mod square;
+mod pulse;
 mod noise;
 
-pub use square::SquareRegister;
+pub use pulse::PulseRegister;
 pub use noise::NoiseRegister;

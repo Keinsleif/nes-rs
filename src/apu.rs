@@ -1,13 +1,13 @@
 mod registers;
 pub mod sounds;
 
-use registers::SquareRegister;
+use registers::PulseRegister;
 use registers::NoiseRegister;
 use self::sounds::Transmitters;
 
 pub struct NesAPU {
-    square1: SquareRegister,
-    square2: SquareRegister,
+    square1: PulseRegister,
+    square2: PulseRegister,
     noise: NoiseRegister,
     txs: Transmitters,
 }
@@ -15,8 +15,8 @@ pub struct NesAPU {
 impl NesAPU {
     pub fn new(txs: Transmitters) -> Self {
         NesAPU {
-            square1: SquareRegister::new(),
-            square2: SquareRegister::new(),
+            square1: PulseRegister::new(),
+            square2: PulseRegister::new(),
             noise: NoiseRegister::new(),
             txs
         }

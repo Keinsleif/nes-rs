@@ -1,14 +1,14 @@
 use std::{sync::mpsc::{channel, Receiver, Sender}, time::Duration};
 
-pub struct SquareNote {
+pub struct PulseNote {
     pub freq: f32,
     pub volume: f32,
     pub duty: f32,
 }
 
-impl SquareNote {
+impl PulseNote {
     pub fn new() -> Self {
-        SquareNote {
+        PulseNote {
             freq: 0.0,
             volume: 0.0,
             duty: 0.0,
@@ -16,21 +16,21 @@ impl SquareNote {
     }
 }
 
-pub struct SquareSound {
+pub struct PulseSound {
     sample_rate: f32,
     phase: f32,
-    pub note: SquareNote,
-    pub rx: Receiver<SquareNote>,
+    pub note: PulseNote,
+    pub rx: Receiver<PulseNote>,
 }
 
-impl SquareSound {
-    pub fn new(sample_rate: f32) -> (Self, Sender<SquareNote>) {
-        let (tx, rx) = channel::<SquareNote>();
+impl PulseSound {
+    pub fn new(sample_rate: f32) -> (Self, Sender<PulseNote>) {
+        let (tx, rx) = channel::<PulseNote>();
         (
-            SquareSound {
+            PulseSound {
                 sample_rate,
                 phase: 0.0,
-                note: SquareNote::new(),
+                note: PulseNote::new(),
                 rx,
             },
             tx,

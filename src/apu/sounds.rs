@@ -1,29 +1,29 @@
 mod noise;
-mod square;
+mod pulse;
 
 use std::sync::mpsc::Sender;
 
 pub use noise::NoiseNote;
 pub use noise::NoiseSound;
-pub use square::SquareNote;
-pub use square::SquareSound;
+pub use pulse::PulseNote;
+pub use pulse::PulseSound;
 
 pub struct Transmitters {
-    pub square1: Sender<SquareNote>,
-    pub square2: Sender<SquareNote>,
+    pub square1: Sender<PulseNote>,
+    pub square2: Sender<PulseNote>,
     pub noise: Sender<NoiseNote>,
 }
 
 pub struct SoundManager {
-    pub square1: SquareSound,
-    pub square2: SquareSound,
+    pub square1: PulseSound,
+    pub square2: PulseSound,
     pub noise: NoiseSound,
 }
 
 impl SoundManager {
     pub fn new(sample_rate: f32) -> (Self, Transmitters) {
-        let (square1_sound, square1_tx) = SquareSound::new(sample_rate);
-        let (square2_sound, square2_tx) = SquareSound::new(sample_rate);
+        let (square1_sound, square1_tx) = PulseSound::new(sample_rate);
+        let (square2_sound, square2_tx) = PulseSound::new(sample_rate);
         let (noise_sound, noise_tx) = NoiseSound::new(sample_rate);
         (
             SoundManager {
