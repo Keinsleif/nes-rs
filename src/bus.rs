@@ -171,9 +171,10 @@ impl Mem for Bus<'_> {
 
                 self.ppu.write_oam_dma(&buffer);
 
-                // todo: handle this eventually
-                // let add_cycles: u16 = if self.cycles % 2 == 1 { 514 } else { 513 };
-                // self.tick(add_cycles); //todo this will cause weird effects as PPU will have 513/514 * 3 ticks
+                let add_cycles: u16 = if self.cycles % 2 == 1 { 514 } else { 513 };
+                for _ in 0..add_cycles {
+                    self.tick(1);
+                }
             }
 
             0x2008..=PPU_REGISTERS_MIRRORS_END => {
