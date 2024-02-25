@@ -3,11 +3,13 @@ pub mod sounds;
 
 use registers::PulseRegister;
 use registers::NoiseRegister;
+use self::registers::TriangleRegister;
 use self::sounds::Transmitters;
 
 pub struct NesAPU {
     square1: PulseRegister,
     square2: PulseRegister,
+    triangle: TriangleRegister,
     noise: NoiseRegister,
     txs: Transmitters,
 }
@@ -17,6 +19,7 @@ impl NesAPU {
         NesAPU {
             square1: PulseRegister::new(),
             square2: PulseRegister::new(),
+            triangle: TriangleRegister::new(),
             noise: NoiseRegister::new(),
             txs
         }
@@ -30,6 +33,11 @@ impl NesAPU {
     pub fn write_square2(&mut self, addr: u16, data: u8) {
         self.square2.write(addr - 0x0004, data);
         self.txs.square2.send(self.square2.get_note()).unwrap();
+    }
+
+    pub fn write_triangle(&mut self, addr: u16, data: u8) {
+        self.triangle.write(addr, data);
+        self.txs.triangle.send(self.triangle.get_note()).unwrap();
     }
 
     pub fn write_noise(&mut self, addr: u16, data: u8) {
