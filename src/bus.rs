@@ -141,11 +141,15 @@ impl Mem for Bus<'_> {
                 self.apu.write_square2(addr, data);
             }
 
+            0x4008..=0x400B => {
+                self.apu.write_triangle(addr, data);
+            }
+
             0x400C..=0x400F => {
                 self.apu.write_noise(addr, data);
             }
 
-            0x4008..=0x400B | 0x4010..=0x4013 | 0x4015 => {
+            0x4010..=0x4013 | 0x4015 => {
                 //ignore APU 
             }
 
