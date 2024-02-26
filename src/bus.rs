@@ -25,7 +25,7 @@ impl<'a> Bus<'a> {
     where
         F: FnMut(&NesPPU, &mut Joypad) + 'call,
     {
-        let ppu = NesPPU::new(rom.chr_rom, rom.screen_mirroring);
+        let ppu = NesPPU::new(rom);
         Bus {
             cpu_vram: [0; 2048],
             prg_rom: rom.prg_rom,

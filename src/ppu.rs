@@ -3,10 +3,11 @@ mod registers;
 use self::registers::{
     AddrRegister, ControlRegister, MaskRegister, ScrollRegister, StatusRegister,
 };
-use crate::cartridge::Mirroring;
+use crate::cartridge::{Mirroring, Rom};
 
 pub struct NesPPU {
     pub chr_rom: Vec<u8>,
+    pub is_chr_ram: bool,
     pub mirroring: Mirroring,
     pub palette_table: [u8; 32],
 
@@ -41,10 +42,11 @@ pub trait PPU {
 }
 
 impl NesPPU {
-    pub fn new(chr_rom: Vec<u8>, mirroring: Mirroring) -> Self {
+    pub fn new(rom: Rom) -> Self {
         NesPPU {
-            chr_rom,
-            mirroring,
+            chr_rom: rom.chr_rom,
+            is_chr_ram: rom.is_chr_ram,
+            mirroring: rom.screen_mirroring,
             palette_table: [0; 32],
             ctrl: ControlRegister::new(),
             mask: MaskRegister::new(),
@@ -171,7 +173,13 @@ impl PPU for NesPPU {
     fn write_to_data(&mut self, value: u8) {
         let addr = self.addr.get();
         match addr {
-            0..=0x1fff => println!("Attempt to write to chr rom space 0x{:<04x}", addr),
+            0..=0x1fff => {
+                if self.is_chr_ram {
+                    self.chr_rom[addr as usize] = value;
+                } else {
+                    println!("Attempt to write to chr rom space 0x{:<04x}", addr)
+                }
+            },
             0x2000..=0x2fff => {
                 self.vram[self.mirror_vram_addr(addr) as usize] = value;
             }
