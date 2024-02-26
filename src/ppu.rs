@@ -3,7 +3,7 @@ mod registers;
 use self::registers::{
     AddrRegister, ControlRegister, MaskRegister, ScrollRegister, StatusRegister,
 };
-use crate::cartridge::{Mirroring, Rom};
+use crate::cartridge::Mirroring;
 
 pub struct NesPPU {
     pub chr_rom: Vec<u8>,
@@ -42,11 +42,11 @@ pub trait PPU {
 }
 
 impl NesPPU {
-    pub fn new(rom: Rom) -> Self {
+    pub fn new(chr_rom: Vec<u8>, is_chr_ram: bool, mirroring: Mirroring) -> Self {
         NesPPU {
-            chr_rom: rom.chr_rom,
-            is_chr_ram: rom.is_chr_ram,
-            mirroring: rom.screen_mirroring,
+            chr_rom,
+            is_chr_ram,
+            mirroring,
             palette_table: [0; 32],
             ctrl: ControlRegister::new(),
             mask: MaskRegister::new(),
