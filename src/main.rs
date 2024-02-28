@@ -22,6 +22,7 @@ use cpal::{
     FromSample, SizedSample, Stream,
 };
 use cpu::CPU;
+use getopts::Options;
 use joypad::Joypad;
 use ppu::NesPPU;
 use renderer::frame::Frame;
@@ -79,9 +80,13 @@ fn main() {
         .create_texture_target(PixelFormatEnum::RGB24, 256, 240)
         .unwrap();
 
-    let args: Vec<String> = env::args().collect();
+    let mut opts = Options::new();
+    opts.optflag("t", "trace", "Turn on operation tracing.");
 
-    let bytes = std::fs::read(&args[1]).unwrap();
+    let args: Vec<String> = env::args().collect();
+    let match_opts = opts.parse(&args[1..]).unwrap();
+
+    let bytes = std::fs::read(match_opts.free[0].clone()).unwrap();
     let rom = Rom::new(&bytes).unwrap();
 
     let mut frame = Frame::new();
@@ -132,12 +137,15 @@ fn main() {
     );
     let mut cpu = CPU::new(bus);
     cpu.reset();
-    cpu.run();
+    
+    if match_opts.opt_present("t") {
+        cpu.run_with_callback(|cpu| {
+            println!("{}", trace::trace(cpu));
+        });
+    } else {
+        cpu.run();
+    }
     // cpu.program_counter = 0xC000;
-
-    // cpu.run_with_callback(|cpu| {
-    //     println!("{}", trace::trace(cpu));
-    // });
 }
 
 fn run<T>(device: &cpal::Device, config: &cpal::StreamConfig) -> (Stream, Transmitters)
