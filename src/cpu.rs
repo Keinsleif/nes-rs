@@ -325,7 +325,9 @@ impl<'a> CPU<'a> {
                     self.tya();
                 }
                 "BRK" => {
-                    return;
+                    if !self.status.contains(CpuFlags::INTERRUPT_DISABLE) {
+                        self.interrupt(interrupt::BRK);
+                    }
                 }
                 /* unofficial */
                 "ALR" => {
