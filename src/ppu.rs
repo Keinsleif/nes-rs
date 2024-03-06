@@ -23,7 +23,7 @@ pub struct NesPPU {
     internal_data_buf: u8,
 
     scanline: u16,
-    cycles: usize,
+    cycles: isize,
     pub nmi_interrupt: Option<u8>,
 }
 
@@ -59,7 +59,7 @@ impl NesPPU {
             internal_data_buf: 0,
 
             scanline: 0,
-            cycles: 0,
+            cycles: -1,
             nmi_interrupt: None,
         }
     }
@@ -95,9 +95,9 @@ impl NesPPU {
     }
 
     pub fn tick(&mut self, cycles: u8) -> bool {
-        self.cycles += cycles as usize;
+        self.cycles += cycles as isize;
         if self.cycles >= 341 {
-            if self.is_sprite_0_hit(self.cycles) {
+            if self.is_sprite_0_hit(self.cycles as usize) {
                 self.status.set_sprite_zero_hit(true)
             }
             
