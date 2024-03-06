@@ -5,6 +5,28 @@ use self::registers::{
 };
 use crate::cartridge::Mirroring;
 
+enum LineStatus {
+    Visible,
+    PostRender,
+    VerticalBlanking(bool),
+    PreRender,
+}
+impl LineStatus {
+    fn from(line: u16) -> LineStatus {
+        if line < 240 {
+            LineStatus::Visible
+        } else if line == 240 {
+            LineStatus::PostRender
+        } else if line < 261 {
+            LineStatus::VerticalBlanking(line == 241)
+        } else if line == 261 {
+            LineStatus::PreRender
+        } else {
+            panic!("invalid line status")
+        }
+    }
+}
+
 pub struct NesPPU {
     pub chr_rom: Vec<u8>,
     pub is_chr_ram: bool,
@@ -22,7 +44,7 @@ pub struct NesPPU {
 
     internal_data_buf: u8,
 
-    scanline: i16,
+    scanline: u16,
     cycles: usize,
     pub nmi_interrupt: Option<u8>,
 }
@@ -58,7 +80,7 @@ impl NesPPU {
             vram: [0; 2048],
             internal_data_buf: 0,
 
-            scanline: -1,
+            scanline: 0,
             cycles: 0,
             nmi_interrupt: None,
         }
@@ -94,7 +116,7 @@ impl NesPPU {
         (y == self.scanline as usize) && x <= cycle && self.mask.show_sprites()
     }
 
-    pub fn tick(&mut self) -> bool {
+    pub fn tick(&mut self) {
         self.cycles += 1;
         if self.cycles >= 341 {
 
@@ -105,20 +127,25 @@ impl NesPPU {
             self.cycles = self.cycles - 341;
             self.scanline += 1;
 
-            if self.scanline == 241 {
+            match LineStatus::from(self.scanline) {
+                LineStatus::Visible => {}
+                LineStatus::PostRender => {}
+                LineStatus::VerticalBlanking(is_first) => {
+                    if is_first {
                 self.status.set_vblank_status(true);
                 self.status.set_sprite_zero_hit(false);
                 if self.ctrl.generate_vblank_nmi() {
                     self.nmi_interrupt = Some(1);
                 }
             }
-
-            if self.scanline >= 262 {
-                self.scanline = 0;
+                }
+                LineStatus::PreRender => {
                 self.nmi_interrupt = None;
                 self.status.set_sprite_zero_hit(false);
                 self.status.reset_vblank_status();
-                return true;
+                }
+            }
+            self.scanline = (self.scanline + 1) % 262
             }
         }
         return false;
