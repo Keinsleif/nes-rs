@@ -49,7 +49,9 @@ impl<'a> Bus<'a> {
         self.cycles += cycles as usize;
 
         let nmi_before = self.ppu.nmi_interrupt.is_some();
-        self.ppu.tick(cycles*3);
+        for _ in 0..(cycles * 3) {
+            self.ppu.tick();
+        }
         let nmi_after = self.ppu.nmi_interrupt.is_some();
 
         if !nmi_before && nmi_after {

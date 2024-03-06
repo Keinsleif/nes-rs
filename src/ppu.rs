@@ -94,8 +94,8 @@ impl NesPPU {
         (y == self.scanline as usize) && x <= cycle && self.mask.show_sprites()
     }
 
-    pub fn tick(&mut self, cycles: u8) -> bool {
-        self.cycles += cycles as isize;
+    pub fn tick(&mut self) -> bool {
+        self.cycles += 1;
         if self.cycles >= 341 {
             if self.is_sprite_0_hit(self.cycles as usize) {
                 self.status.set_sprite_zero_hit(true)
