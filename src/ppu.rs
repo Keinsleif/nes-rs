@@ -5,6 +5,64 @@ use self::registers::{
 };
 use crate::cartridge::Mirroring;
 
+pub enum TileId {
+    Normal { id: u8 },
+    Large {
+        bank: u16,
+        id: u8,
+    }
+}
+
+impl TileId {
+    pub fn new(is_large: bool, src: u8) -> Self {
+        if !is_large {
+            TileId::Normal { id: src }
+        } else {
+            TileId::Large { bank: (if (src & 0x01) == 0x01 {
+                0x1000
+            } else {
+                0x0000
+            }), id: src & 0xfe }
+        }
+    }
+}
+
+pub struct SpriteAttr {
+    pub palette: u8,
+    pub priority: u8,
+    pub is_flip_horizonal: bool,
+    pub is_flip_vertical: bool,
+}
+
+impl SpriteAttr {
+    pub fn new(src: u8) -> Self {
+        SpriteAttr {
+            palette: src & 0b0000_0011,
+            priority: (src >> 5) & 0b0000_0001,
+            is_flip_horizonal: src & 0b0100_0000 != 0x00,
+            is_flip_vertical: src & 0b1000_0000 != 0x00,
+        }
+    }
+}
+
+pub struct Sprite {
+    pub y: u8,
+    pub tile_id: TileId,
+    pub attr: SpriteAttr,
+    pub x: u8,
+}
+
+impl Sprite {
+    pub fn new(is_large: bool, oam: [u8; 4]) -> Self {
+        Sprite {
+            y: oam[0],
+            tile_id: TileId::new(is_large, oam[1]),
+            attr: SpriteAttr::new(oam[2]),
+            x: oam[3],
+        }
+    }
+}
+
 enum LineStatus {
     Visible,
     PostRender,
@@ -132,23 +190,38 @@ impl NesPPU {
                 LineStatus::PostRender => {}
                 LineStatus::VerticalBlanking(is_first) => {
                     if is_first {
-                self.status.set_vblank_status(true);
-                self.status.set_sprite_zero_hit(false);
-                if self.ctrl.generate_vblank_nmi() {
-                    self.nmi_interrupt = Some(1);
-                }
-            }
+                        self.status.set_vblank_status(true);
+                        self.status.set_sprite_zero_hit(false);
+                        if self.ctrl.generate_vblank_nmi() {
+                            self.nmi_interrupt = Some(1);
+                        }
+                    }
                 }
                 LineStatus::PreRender => {
-                self.nmi_interrupt = None;
-                self.status.set_sprite_zero_hit(false);
-                self.status.reset_vblank_status();
+                    self.nmi_interrupt = None;
+                    self.status.set_sprite_zero_hit(false);
+                    self.status.reset_vblank_status();
                 }
             }
             self.scanline = (self.scanline + 1) % 262
+        }
+    }
+
+    fn fetch_sprite(&mut self) {
+        if !self.mask.show_sprites() {
+            return;
+        }
+        let sprite_height = u16::from(self.ctrl.sprite_size());
+        let mut tmp_idx = 0;
+        for sprite_idx in 0..64 {
+            let oam_addr = sprite_idx << 2;
+            let sprite_y = u16::from(self.oam_data[oam_addr]);
+            let sprite_y_end = sprite_y + sprite_height;
+            
+            if (sprite_y < self.scanline) && (sprite_y_end >= self.scanline) {
+                
             }
         }
-        return false;
     }
 
     pub fn poll_nmi_interrupt(&mut self) -> Option<u8> {
