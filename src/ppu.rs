@@ -5,6 +5,7 @@ use self::registers::{
 };
 use crate::cartridge::Mirroring;
 
+#[derive(Copy, Clone)]
 pub enum TileId {
     Normal { id: u8 },
     Large {
@@ -27,6 +28,7 @@ impl TileId {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct SpriteAttr {
     pub palette: u8,
     pub priority: u8,
@@ -45,6 +47,7 @@ impl SpriteAttr {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Sprite {
     pub y: u8,
     pub tile_id: TileId,
@@ -53,7 +56,7 @@ pub struct Sprite {
 }
 
 impl Sprite {
-    pub fn new(is_large: bool, oam: [u8; 4]) -> Self {
+    pub fn new(is_large: bool, oam: &[u8]) -> Self {
         Sprite {
             y: oam[0],
             tile_id: TileId::new(is_large, oam[1]),
@@ -105,6 +108,8 @@ pub struct NesPPU {
     scanline: u16,
     cycles: usize,
     pub nmi_interrupt: Option<u8>,
+    secondary_oam_data: [Option<Sprite>; 8],
+    sprite_zero_flags: [bool; 8],
 }
 
 pub trait PPU {
@@ -138,9 +143,11 @@ impl NesPPU {
             vram: [0; 2048],
             internal_data_buf: 0,
 
-            scanline: 0,
+            scanline: 241,
             cycles: 0,
             nmi_interrupt: None,
+            secondary_oam_data: [None; 8],
+            sprite_zero_flags: [false; 8],
         }
     }
 
@@ -175,18 +182,17 @@ impl NesPPU {
     }
 
     pub fn tick(&mut self) {
-        self.cycles += 1;
         if self.cycles >= 341 {
 
-            if self.is_sprite_0_hit(self.cycles as usize) {
-                self.status.set_sprite_zero_hit(true)
-            }
-            
             self.cycles = self.cycles - 341;
-            self.scanline += 1;
 
             match LineStatus::from(self.scanline) {
-                LineStatus::Visible => {}
+                LineStatus::Visible => {
+                    if self.is_sprite_0_hit(self.cycles as usize) {
+                        self.status.set_sprite_zero_hit(true)
+                    }
+                    self.sprite_evaluation();
+                }
                 LineStatus::PostRender => {}
                 LineStatus::VerticalBlanking(is_first) => {
                     if is_first {
@@ -205,9 +211,10 @@ impl NesPPU {
             }
             self.scanline = (self.scanline + 1) % 262
         }
+        self.cycles += 1;
     }
 
-    fn fetch_sprite(&mut self) {
+    fn sprite_evaluation(&mut self) {
         if !self.mask.show_sprites() {
             return;
         }
@@ -219,7 +226,17 @@ impl NesPPU {
             let sprite_y_end = sprite_y + sprite_height;
             
             if (sprite_y < self.scanline) && (sprite_y_end >= self.scanline) {
-                
+                if sprite_idx == 0 && self.scanline==sprite_y {
+                    self.status.set_sprite_zero_hit(true);
+                }
+                if tmp_idx >= 8 {
+                    self.status.set_sprite_overflow(true);
+                    break;
+                } else {
+                    self.secondary_oam_data[tmp_idx] = Some(Sprite::new(sprite_height == 16, &self.oam_data[oam_addr..oam_addr+4]));
+                    self.sprite_zero_flags[tmp_idx] = sprite_idx == 0;
+                    tmp_idx += 1;
+                }
             }
         }
     }
