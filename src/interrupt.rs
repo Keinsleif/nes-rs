@@ -14,14 +14,14 @@ pub(super) struct Interrupt {
 
 pub(super) const NMI: Interrupt = Interrupt {
     itype: InterruptType::NMI,
-    vector_addr: 0xfffA,
+    vector_addr: 0xFFFA,
     b_flag_mask: 0b00100000,
     cpu_cycles: 2,
 };
 
 pub(super) const BRK: Interrupt = Interrupt {
     itype: InterruptType::BRK,
-    vector_addr: 0xfffe,
+    vector_addr: 0xFFFE,
     b_flag_mask: 0b0011_0000,
     cpu_cycles: 1,
 };
