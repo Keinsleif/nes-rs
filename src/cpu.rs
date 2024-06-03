@@ -80,7 +80,7 @@ impl Mem for CPU<'_> {
 }
 
 impl<'a> CPU<'a> {
-    pub fn new<'b>(bus: Bus<'b>) -> CPU<'b> {
+    pub fn new(bus: Bus<'_>) -> CPU<'_> {
         CPU {
             reg_a: 0,
             reg_x: 0,
