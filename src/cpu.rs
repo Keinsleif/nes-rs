@@ -140,7 +140,7 @@ impl<'a> CPU<'a> {
 
     fn interrupt(&mut self, interrupt: interrupt::Interrupt) {
         self.stack_push_u16(self.program_counter);
-        let mut flag = self.status.clone();
+        let mut flag = self.status;
         flag.set(CpuFlags::BREAK, interrupt.b_flag_mask & 0b010000 != 0);
         flag.set(CpuFlags::BREAK2, interrupt.b_flag_mask & 0b100000 != 0);
 
@@ -869,7 +869,7 @@ impl<'a> CPU<'a> {
     }
 
     fn php(&mut self) {
-        let mut flags = self.status.clone();
+        let mut flags = self.status;
         flags.insert(CpuFlags::BREAK);
         flags.insert(CpuFlags::BREAK2);
         self.stack_push(flags.bits());
